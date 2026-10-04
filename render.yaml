@@ -2,7 +2,7 @@ services:
   - type: web
     name: offline-notes-app
     runtime: node
-    buildCommand: npm install && cd client && npm install && cd .. && npm run build
+    buildCommand: npm install --include=dev && cd client && npm install --include=dev && cd .. && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
