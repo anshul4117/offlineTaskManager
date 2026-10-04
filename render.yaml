@@ -1,13 +1,18 @@
 services:
   - type: web
     name: offline-notes-app
-    env: node
-    buildCommand: npm install && cd client && npm install && cd .. && npm run build
-    startCommand: npm run start
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: PORT
         value: 10000
       - key: NODE_ENV
         value: production
       - key: DATABASE_PATH
-        value: ./server.db
+        value: /var/data/app.db
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1
