@@ -51,13 +51,49 @@ export const App: React.FC = () => {
     const urlNoteId = params.get('note');
     if (urlNoteId) {
       db.records.get(urlNoteId).then((rec) => {
-        if (rec) {
+        if (rec && !rec.deleted) {
           setEditingItem(rec);
           setEditorType(rec.type);
           setIsEditorOpen(true);
+        } else {
+          // Clean up invalid or tombstoned note parameter from URL
+          const newParams = new URLSearchParams(window.location.search);
+          newParams.delete('note');
+          const newSearch = newParams.toString() ? '?' + newParams.toString() : window.location.pathname;
+          window.history.replaceState(null, '', newSearch);
         }
       });
     }
+  }, []);
+
+  // Handle browser Back / Forward navigation (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get('tab');
+      if (urlTab && ['all', 'notes', 'tasks', 'pending', 'conflicts', 'trash'].includes(urlTab)) {
+        setActiveTab(urlTab as any);
+      }
+      const urlNoteId = params.get('note');
+      if (urlNoteId) {
+        db.records.get(urlNoteId).then((rec) => {
+          if (rec && !rec.deleted) {
+            setEditingItem(rec);
+            setEditorType(rec.type);
+            setIsEditorOpen(true);
+          } else {
+            setIsEditorOpen(false);
+            setEditingItem(null);
+          }
+        });
+      } else {
+        setIsEditorOpen(false);
+        setEditingItem(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // Cmd+K / Ctrl+K keyboard shortcut listener for search bar focus
@@ -76,6 +112,11 @@ export const App: React.FC = () => {
   const allRecords = useLiveQuery(() => db.records.toArray(), []) || [];
   const pendingOutboxCount = useLiveQuery(() => db.outbox.count(), []) || 0;
 
+  // Derived reactive item for detail editor modal
+  const currentEditingItem = editingItem
+    ? allRecords.find((r) => r.id === editingItem.id) || editingItem
+    : null;
+
   const handleSelectTab = (tab: any) => {
     setActiveTab(tab);
     setIsMobileMenuOpen(false);
@@ -83,31 +124,35 @@ export const App: React.FC = () => {
     params.set('tab', tab);
     params.delete('note');
     const newSearch = '?' + params.toString();
-    window.history.replaceState(null, '', newSearch);
+    window.history.pushState(null, '', newSearch);
   };
 
   const handleCreateNew = (type: ItemType) => {
     setEditingItem(null);
     setEditorType(type);
     setIsEditorOpen(true);
+    setIsMobileMenuOpen(false);
   };
 
   const handleEdit = (item: LocalRecord) => {
     setEditingItem(item);
     setEditorType(item.type);
     setIsEditorOpen(true);
+    setIsMobileMenuOpen(false);
     const params = new URLSearchParams(window.location.search);
     params.set('note', item.id);
-    window.history.replaceState(null, '', '?' + params.toString());
+    window.history.pushState(null, '', '?' + params.toString());
   };
 
   const handleCloseEditor = () => {
     setIsEditorOpen(false);
     setEditingItem(null);
     const params = new URLSearchParams(window.location.search);
-    params.delete('note');
-    const newSearch = params.toString() ? '?' + params.toString() : window.location.pathname;
-    window.history.replaceState(null, '', newSearch);
+    if (params.has('note')) {
+      params.delete('note');
+      const newSearch = params.toString() ? '?' + params.toString() : window.location.pathname;
+      window.history.pushState(null, '', newSearch);
+    }
   };
 
   // Filter records based on active tab and search query
@@ -420,7 +465,7 @@ export const App: React.FC = () => {
       <ItemEditorModal
         isOpen={isEditorOpen}
         initialType={editorType}
-        editingItem={editingItem}
+        editingItem={currentEditingItem}
         onClose={handleCloseEditor}
         onSave={handleSaveItem}
       />

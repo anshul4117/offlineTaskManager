@@ -35,7 +35,7 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
       setType(initialType);
     }
     setError(null);
-  }, [editingItem, initialType, isOpen]);
+  }, [editingItem?.id, initialType, isOpen]);
 
   if (!isOpen) return null;
 
@@ -88,8 +88,9 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
         border: '1px solid var(--border-color)',
         width: '100%',
         maxWidth: '540px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
-        overflow: 'hidden'
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)'
       }}>
         {/* Modal Header */}
         <div style={{

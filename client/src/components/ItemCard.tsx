@@ -28,6 +28,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
   return (
     <div
+      onClick={() => onEdit(item)}
       style={{
         backgroundColor: 'var(--bg-card)',
         borderRadius: 'var(--radius-lg)',
@@ -43,6 +44,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         position: 'relative',
         boxShadow: 'var(--shadow-subtle)',
         opacity: item.deleted ? 0.6 : 1,
+        cursor: 'pointer',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
       }}
     >
@@ -117,7 +119,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             </span>
             {onResolveConflict && (
               <button
-                onClick={() => onResolveConflict(item)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResolveConflict(item);
+                }}
                 style={{
                   padding: '4px 10px',
                   borderRadius: 'var(--radius-sm)',
@@ -187,7 +192,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
           {item.conflict && onResolveConflict ? (
             <button
-              onClick={() => onResolveConflict(item)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onResolveConflict(item);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -211,7 +219,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             {item.deleted ? (
               onRestore && (
                 <button
-                  onClick={() => onRestore(item.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRestore(item.id);
+                  }}
                   title="Restore Record from Tombstone"
                   style={{
                     display: 'flex',
@@ -232,7 +243,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             ) : (
               <>
                 <button
-                  onClick={() => onEdit(item)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(item);
+                  }}
                   title="Edit Record"
                   style={{
                     padding: '5px',
@@ -244,7 +258,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
                   <Edit2 size={15} />
                 </button>
                 <button
-                  onClick={() => onDelete(item.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(item.id);
+                  }}
                   title="Soft Delete"
                   style={{
                     padding: '5px',
