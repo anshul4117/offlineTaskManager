@@ -6,5 +6,5 @@ dotenv.config();
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  console.log(`[Server] Offline-First Backend running on http://localhost:${PORT}`);
+  console.log(`[Server] Express Backend running on http://localhost:${PORT}`);
 });

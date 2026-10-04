@@ -6,149 +6,68 @@ Use this log throughout the hackathon. Record significant AI-assisted contributi
 
 ---
 
-## 2026-10-04 — Phase 1 & 2: Project Setup & Data Models
+## 2026-10-04 — Phase 1: Architecture Specification
 
 **AI tool:**
 Google Antigravity
 
 **Area:**
-Architecture / Database / Scaffolding
+Architecture / Documentation
 
 **What AI assisted with:**
-Scaffolded project configuration files (`package.json`, `tsconfig.json`, `tsconfig.server.json`, `vite.config.ts`, `.env.example`), defined shared TypeScript interfaces for local and server records, outbox operations, and API contracts (`src/types/index.ts`), and set up IndexedDB schema via Dexie.js (`src/db/index.ts`) and SQLite schema via `better-sqlite3` (`server/db.ts`).
+Finalized Phase 1 architecture documentation in `docs/architecture.md` including system Mermaid diagram, local IndexedDB models (`records`, `outbox`, `meta`), SQLite server models (`records`, `operations`), explicit REST API contracts (`/api/health`, `/api/sync/push`, `/api/sync/pull`), version conflict surfacing strategy, and edge case matrix.
 
 **Files affected:**
 
-* `package.json`
-* `tsconfig.json`
-* `tsconfig.server.json`
-* `vite.config.ts`
-* `.env.example`
-* `src/types/index.ts`
-* `src/db/index.ts`
-* `server/db.ts`
+* `docs/architecture.md`
 
 **Human review:**
-Reviewed project scaffolding and database schema definitions against `AGENTS.md` non-negotiable data model rules. Verified UUID usage and tombstone soft delete fields.
+Reviewed architecture specification against `AGENTS.md` and `PLAN.md` core non-negotiable rules.
 
 **Verification:**
-Ran `npm install` and TypeScript type-check validation.
+Verified structural Mermaid validity, data model names, and API route signatures.
 
 **Final status:**
 Accepted
 
 ---
 
-## 2026-10-04 — Phase 3: Server Implementation & Sync Endpoints
+## 2026-10-04 — Phase 2: Full-Stack Repository Scaffolding & Health Check UI Shell
 
 **AI tool:**
 Google Antigravity
 
 **Area:**
-Backend / Database / API / Synchronization
+Architecture / Frontend / Backend / PWA / Deployment
 
 **What AI assisted with:**
-Implemented Express application endpoints (`GET /api/health`, `POST /api/sync/push`, `GET /api/sync/pull`) in `server/app.ts` with SQLite transaction processing, idempotency check via `operations` table, version conflict detection (`baseVersion !== server.version` returning `409 Conflict`), soft-deletes, and timestamp-based incremental pull filtering.
+Scaffolded `client/` and `server/` project structure. Configured React + Vite + TypeScript in `client/` with `vite-plugin-pwa` service worker generation. Configured Express server in `server/` with `GET /api/health` health endpoint, static production file serving for `client/dist`, and SPA route fallback. Added root orchestration scripts in `package.json`, environment documentation in `.env.example`, and deployment configuration in `render.yaml`. Built a frontend shell in `client/src/App.tsx` displaying application branding and real-time backend health status.
 
 **Files affected:**
 
+* `client/package.json`
+* `client/tsconfig.json`
+* `client/vite.config.ts`
+* `client/index.html`
+* `client/src/index.css`
+* `client/src/main.tsx`
+* `client/src/App.tsx`
+* `server/tsconfig.json`
+* `server/db.ts`
 * `server/app.ts`
-* `server/db.ts`
 * `server/index.ts`
-
-**Human review:**
-Reviewed sync push transaction logic to ensure duplicate operations are safely ignored and stale base versions produce conflict responses with server snapshots.
-
-**Verification:**
-Executed Vitest integration test suite covering health check, push sync, idempotency, version conflicts, and pull filtering.
-
-**Final status:**
-Accepted
-
----
-
-## 2026-10-04 — Phase 4 & 5: Client Storage Engine & Sync Engine
-
-**AI tool:**
-Google Antigravity
-
-**Area:**
-Frontend / Database / Synchronization
-
-**What AI assisted with:**
-Implemented local-first IndexedDB CRUD operations and outbox mutation manager (`src/services/localDb.ts`), conflict resolution helper (`resolveConflict`), hybrid connectivity monitor (`src/services/connectivity.ts`), and sync engine (`src/services/syncEngine.ts`) featuring single-execution lock (`isSyncingLock`), outbox push, version conflict detection handling, and pull sync cursor updates.
-
-**Files affected:**
-
-* `src/services/localDb.ts`
-* `src/services/connectivity.ts`
-* `src/services/syncEngine.ts`
-
-**Human review:**
-Verified that local mutations perform offline IndexedDB writes and outbox queuing without direct API calls in UI handlers, and confirmed single sync lock prevents concurrent sync loops.
-
-**Verification:**
-Verified outbox queue behavior and conflict resolution options (*Keep Local*, *Accept Server*, *Merge Both*).
-
-**Final status:**
-Accepted
-
----
-
-## 2026-10-04 — Phase 6: Frontend UI & PWA Integration
-
-**AI tool:**
-Google Antigravity
-
-**Area:**
-Frontend / UX / PWA
-
-**What AI assisted with:**
-Built local-first UI components reacting exclusively to IndexedDB via Dexie `useLiveQuery` (`src/App.tsx`, `Header.tsx`, `ItemCard.tsx`, `ItemEditorModal.tsx`), interactive conflict resolution dialog (`ConflictResolverModal.tsx`), outbox inspector modal (`SyncStatusPanel.tsx`), custom CSS (`src/index.css`), and PWA configuration in `vite.config.ts`.
-
-**Files affected:**
-
-* `src/App.tsx`
-* `src/index.css`
-* `src/components/Header.tsx`
-* `src/components/ItemCard.tsx`
-* `src/components/ItemEditorModal.tsx`
-* `src/components/ConflictResolverModal.tsx`
-* `src/components/SyncStatusPanel.tsx`
-* `vite.config.ts`
-
-**Human review:**
-Reviewed UI responsiveness, tab filters, search behavior, sync status indicators, outbox queue inspector modal, and conflict resolution modal UX.
-
-**Verification:**
-Executed full frontend build (`npm run build`) and PWA service worker generation.
-
-**Final status:**
-Accepted
-
----
-
-## 2026-10-04 — Phase 7: Automated Testing & Verification
-
-**AI tool:**
-Google Antigravity
-
-**Area:**
-Testing / Architecture
-
-**What AI assisted with:**
-Created end-to-end server API integration tests using Vitest and Supertest in `server/__tests__/api.test.ts`, covering health status, push sync, idempotency, version conflict detection, soft deletes, and pull filtering. Configured Vitest test exclusion for `dist-server`.
-
-**Files affected:**
-
 * `server/__tests__/api.test.ts`
-* `vite.config.ts`
+* `package.json`
+* `vitest.config.ts`
+* `.env.example`
+* `render.yaml`
+* `docs/AI_LOG.md`
 
 **Human review:**
-Verified all 7 test cases passed cleanly and tested server build (`npm run build:server`).
+Reviewed directory structure, build outputs, environment variable documentation, and verified no premature offline CRUD or sync code was added in Phase 2.
 
 **Verification:**
-Ran `npm test` (7/7 tests passed) and `npm run build` (0 errors).
+Executed `npm install`, `npm run build` (compiled `client/dist` and PWA service worker `dist/sw.js`), `npm test` (passed API health test), started production Express server, verified `curl http://localhost:3001/api/health` (`status: ok`, `database: connected`), and verified frontend UI shell and Service Worker in browser via subagent.
 
 **Final status:**
 Accepted
@@ -161,15 +80,14 @@ To be completed in Phase 9 after reviewing this log:
 
 ```text
 AI-assisted components:
-- Local IndexedDB storage engine & outbox queue manager (src/services/localDb.ts, src/db/index.ts)
-- Hybrid connectivity monitor (src/services/connectivity.ts)
-- Synchronization engine with single execution lock & conflict handling (src/services/syncEngine.ts)
-- Express REST API & SQLite transactional storage (server/app.ts, server/db.ts)
-- Local-first React components, Conflict Resolution Modal & Outbox Inspector (src/App.tsx, src/components/*)
-- Vitest API test suite (server/__tests__/api.test.ts)
+- Full-stack project structure & build orchestration (package.json, client/vite.config.ts, server/tsconfig.json)
+- Express REST server & health endpoint with static client serving (server/app.ts, server/db.ts, server/index.ts)
+- React PWA shell & health status dashboard (client/src/App.tsx, client/index.html)
+- Automated API health test suite (server/__tests__/api.test.ts)
+- Deployment specification (render.yaml)
 
 External APIs:
-- None (Self-contained REST server with SQLite backend)
+- None (Self-contained Express REST backend)
 
 External datasets:
 - None
