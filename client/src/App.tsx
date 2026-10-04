@@ -121,6 +121,8 @@ export const App: React.FC = () => {
   // Read application state EXCLUSIVELY from Dexie IndexedDB
   const allRecords = useLiveQuery(() => db.records.toArray(), []) || [];
   const pendingOutboxCount = useLiveQuery(() => db.outbox.count(), []) || 0;
+  const lastSyncedMeta = useLiveQuery(() => db.meta.get('lastSyncedAt'), []);
+  const lastSyncedAt = lastSyncedMeta ? lastSyncedMeta.value : null;
 
   // Derived reactive items for modals
   const currentViewingItem = viewingItem
@@ -347,7 +349,7 @@ export const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Dark Sync Summary Banner Widget */}
+        {/* Dark Sync Hero Card Widget */}
         <div style={{ marginBottom: '24px' }}>
           <SyncSummaryWidget
             totalNotesCount={activeRecords.length}
@@ -356,9 +358,12 @@ export const App: React.FC = () => {
             isOnline={!isSimulatedOffline}
             isSimulatedOffline={isSimulatedOffline}
             isSyncing={syncState === 'syncing'}
+            isError={syncState === 'error'}
+            lastSyncedAt={lastSyncedAt}
             onToggleSimulatedOffline={() => setIsSimulatedOffline(!isSimulatedOffline)}
             onOpenOutboxInspector={() => setIsOutboxModalOpen(true)}
             onSyncNow={() => syncEngine.triggerSync()}
+            onResolveConflict={() => setActiveTab('conflicts')}
           />
         </div>
 
