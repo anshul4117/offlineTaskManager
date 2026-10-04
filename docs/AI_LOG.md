@@ -213,6 +213,35 @@ Accepted
 
 ---
 
+## 2026-10-04 — Phase 6: Conflict Detection & User-Controlled Resolution Engine
+
+**AI tool:**
+Google Antigravity
+
+**Area:**
+Frontend / Conflict Engine / UX / Testing
+
+**What AI assisted with:**
+Implemented user-controlled version conflict resolution engine in `client/src/services/localDb.ts`. Supported `keep_local` (Keep Mine), `keep_server` (Keep Theirs), and `merge` (Merge Manually) reconciliation strategies. Updated `resolveConflict` to clear prior outbox operations for conflicted records, set updated `baseVersion = serverRecord.version`, and trigger automatic re-synchronization (`syncEngine.triggerSync()`). Enhanced `ConflictResolverModal.tsx` with side-by-side comparative diffs, version numbers (`Local vX vs Server vY`), and remote-delete alert banners (`serverRecord.deleted === true`). Created Vitest unit test suite `client/src/__tests__/conflict.test.ts` testing conflict flag persistence, outbox `baseVersion` updating, Keep Mine, Keep Theirs, Merge Manually, and remote-delete conflict resolution.
+
+**Files affected:**
+
+* `client/src/services/localDb.ts`
+* `client/src/components/ConflictResolverModal.tsx`
+* `client/src/__tests__/conflict.test.ts`
+* `docs/AI_LOG.md`
+
+**Human review:**
+Reviewed `resolveConflict` Dexie transaction boundaries, outbox cleanup, baseVersion alignment to server snapshot, automatic re-sync invocation, remote-delete tombstone handling, and verified conflict state persistence across simulated page reloads.
+
+**Verification:**
+Executed `npm test` (passed 25/25 unit and integration tests across 6 test files), `npm run build` (compiled client bundle & PWA service worker with 0 errors).
+
+**Final status:**
+Accepted
+
+---
+
 # Final Disclosure
 
 To be completed in Phase 9 after reviewing this log:
@@ -225,6 +254,7 @@ AI-assisted components:
 - Hybrid connectivity monitor with timeout handling (client/src/services/connectivity.ts)
 - Client push/pull sync engine & concurrency lock (client/src/services/syncEngine.ts)
 - Server REST sync API endpoints, SQLite opId idempotency & version conflict detection (server/services/syncService.ts, server/routes/syncRoutes.ts)
+- Conflict detection & user-controlled resolution engine (Keep Mine, Keep Theirs, Merge Manually) (client/src/services/localDb.ts, client/src/components/ConflictResolverModal.tsx)
 - Google Stitch UI design visual alignment (client/src/components/*, client/src/index.css, client/src/App.tsx)
 - Express REST server & health endpoint with static client serving (server/app.ts, server/db.ts, server/index.ts)
 - Vitest unit & integration test suites (client/src/__tests__/*, server/__tests__/*)

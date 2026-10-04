@@ -103,10 +103,12 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
             </div>
             <div>
               <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--accent-red-text)' }}>
-                State Divergence Detected
+                State Divergence Detected ({`Local v${item.version} vs Server v${serverSnap.version}`})
               </h2>
               <p style={{ fontSize: '12px', color: '#7f1d1d' }}>
-                This note was modified remotely on <strong style={{ fontFamily: 'var(--font-mono)' }}>MacBook Pro</strong> while this device recorded uncommitted offline changes.
+                {serverSnap.deleted
+                  ? `This record was deleted on the server (v${serverSnap.version}) while local changes exist.`
+                  : `This record was modified on the server (v${serverSnap.version}) while this device recorded offline changes.`}
               </p>
             </div>
           </div>
@@ -211,29 +213,31 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
 
               {/* Remote Server Version Column */}
               <div style={{
-                backgroundColor: '#f8fafc',
+                backgroundColor: serverSnap.deleted ? '#fef2f2' : '#f8fafc',
                 borderRadius: 'var(--radius-md)',
                 padding: '16px',
-                border: '1px solid #e2e8f0'
+                border: serverSnap.deleted ? '1px solid #fca5a5' : '1px solid #e2e8f0'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
-                  <span style={{ fontWeight: 700, color: '#3b82f6' }}>● MacBook Pro (Remote)</span>
-                  <span style={{ color: 'var(--text-muted)' }}>(Cloud)</span>
+                  <span style={{ fontWeight: 700, color: serverSnap.deleted ? '#dc2626' : '#3b82f6' }}>
+                    ● Server State (v{serverSnap.version})
+                  </span>
+                  <span style={{ color: 'var(--text-muted)' }}>{serverSnap.deleted ? '(DELETED)' : '(Cloud)'}</span>
                 </div>
                 <h4 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-primary)' }}>
-                  {serverSnap.title}
+                  {serverSnap.title || '(Deleted Record)'}
                 </h4>
                 <div style={{
-                  backgroundColor: '#f0f9ff',
+                  backgroundColor: serverSnap.deleted ? '#fee2e2' : '#f0f9ff',
                   padding: '12px',
                   borderRadius: '6px',
                   fontFamily: 'var(--font-mono)',
                   fontSize: '12px',
-                  color: '#1e40af',
+                  color: serverSnap.deleted ? '#991b1b' : '#1e40af',
                   whiteSpace: 'pre-wrap',
                   lineHeight: '1.4'
                 }}>
-                  ~ {serverSnap.content}
+                  {serverSnap.deleted ? '❌ Record was deleted on server' : `~ ${serverSnap.content}`}
                 </div>
               </div>
             </div>

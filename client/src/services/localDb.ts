@@ -1,5 +1,6 @@
 import { db } from '../db/index.js';
 import type { LocalRecord, ItemType, OutboxOperation } from '../types/index.js';
+import { syncEngine } from './syncEngine.js';
 
 export const MAX_CONTENT_LENGTH = 50000; // 50KB content limit safeguard
 
@@ -268,6 +269,7 @@ export async function restoreRecord(id: string): Promise<void> {
   });
 }
 
+
 /**
  * Resolves a version conflict on a local record.
  */
@@ -288,30 +290,47 @@ export async function resolveConflict(
   const now = new Date().toISOString();
 
   await db.transaction('rw', [db.records, db.outbox], async () => {
-    if (resolution === 'keep_server') {
-      const pendingOps = await db.outbox.where('recordId').equals(id).toArray();
-      for (const op of pendingOps) {
-        await db.outbox.delete(op.opId);
-      }
+    // Always clear old outbox ops for this record to avoid duplicate or conflicting stale operations
+    const pendingOps = await db.outbox.where('recordId').equals(id).toArray();
+    for (const op of pendingOps) {
+      await db.outbox.delete(op.opId);
+    }
 
-      await db.records.put({
-        id: serverSnap.id,
-        title: serverSnap.title,
-        content: serverSnap.content,
-        type: serverSnap.type,
-        version: serverSnap.version,
-        updatedAt: serverSnap.updatedAt,
-        deleted: serverSnap.deleted,
-        pending: false,
-        conflict: false,
-        serverRecord: undefined
-      });
+    if (resolution === 'keep_server') {
+      if (serverSnap.deleted) {
+        // Apply remote delete locally
+        await db.records.put({
+          id: serverSnap.id,
+          title: serverSnap.title,
+          content: serverSnap.content,
+          type: serverSnap.type,
+          version: serverSnap.version,
+          updatedAt: serverSnap.updatedAt,
+          deleted: true,
+          pending: false,
+          conflict: false,
+          serverRecord: undefined
+        });
+      } else {
+        await db.records.put({
+          id: serverSnap.id,
+          title: serverSnap.title,
+          content: serverSnap.content,
+          type: serverSnap.type,
+          version: serverSnap.version,
+          updatedAt: serverSnap.updatedAt,
+          deleted: false,
+          pending: false,
+          conflict: false,
+          serverRecord: undefined
+        });
+      }
     } else if (resolution === 'keep_local') {
       const opId = crypto.randomUUID();
       const outboxOp: OutboxOperation = {
         opId,
         recordId: id,
-        type: 'update',
+        type: record.deleted ? 'delete' : 'update',
         payload: {
           id,
           title: record.title,
@@ -327,6 +346,7 @@ export async function resolveConflict(
       };
 
       await db.records.update(id, {
+        version: serverSnap.version,
         pending: true,
         conflict: false,
         serverRecord: undefined,
@@ -368,6 +388,11 @@ export async function resolveConflict(
       await db.outbox.put(outboxOp);
     }
   });
+
+  // Trigger automatic sync after resolution if an outbox mutation was enqueued
+  if (resolution === 'keep_local' || resolution === 'merge') {
+    syncEngine.triggerSync().catch((err) => console.error('[resolveConflict] Auto-sync error:', err));
+  }
 }
 
 /**
