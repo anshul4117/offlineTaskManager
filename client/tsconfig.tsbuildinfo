@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/__tests__/localdb.test.ts","./src/components/emptystate.tsx","./src/components/header.tsx","./src/components/itemcard.tsx","./src/components/itemeditormodal.tsx","./src/db/index.ts","./src/services/localdb.ts","./src/types/index.ts"],"version":"5.9.3"}

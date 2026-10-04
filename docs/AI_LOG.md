@@ -74,6 +74,42 @@ Accepted
 
 ---
 
+## 2026-10-04 — Phase 3: Offline Local CRUD Engine (Dexie / IndexedDB)
+
+**AI tool:**
+Google Antigravity
+
+**Area:**
+Frontend / Database / UX
+
+**What AI assisted with:**
+Implemented local-first storage layer using Dexie.js (`client/src/db/index.ts`, `client/src/services/localDb.ts`) with client-generated UUIDs (`crypto.randomUUID()`), soft delete tombstones, content size safeguards, and strongly-typed models (`client/src/types/index.ts`). Built reactive UI in `client/src/App.tsx` subscribing to Dexie live queries (`useLiveQuery`), tab filters (All Active, Notes, Tasks, Trash), search bar, note/task editor modal with content counter, and tombstone trash management. Added Vitest unit tests in `client/src/__tests__/localDb.test.ts`.
+
+**Files affected:**
+
+* `client/src/types/index.ts`
+* `client/src/db/index.ts`
+* `client/src/services/localDb.ts`
+* `client/src/components/Header.tsx`
+* `client/src/components/ItemCard.tsx`
+* `client/src/components/ItemEditorModal.tsx`
+* `client/src/components/EmptyState.tsx`
+* `client/src/App.tsx`
+* `client/src/__tests__/localDb.test.ts`
+* `client/package.json`
+* `docs/AI_LOG.md`
+
+**Human review:**
+Verified that UI reads application data **exclusively from IndexedDB** (`useLiveQuery`) without API fetch calls for CRUD operations. Verified tombstone filtering and page reload persistence.
+
+**Verification:**
+Executed `npm test` (passed 6/6 tests), `npm run build` (compiled client production bundle & PWA service worker), started Express production server, and verified offline persistence across page reloads and soft-delete tombstone filtering in browser via subagent.
+
+**Final status:**
+Accepted
+
+---
+
 # Final Disclosure
 
 To be completed in Phase 9 after reviewing this log:
@@ -81,9 +117,10 @@ To be completed in Phase 9 after reviewing this log:
 ```text
 AI-assisted components:
 - Full-stack project structure & build orchestration (package.json, client/vite.config.ts, server/tsconfig.json)
+- Dexie IndexedDB local-first storage engine & tombstone manager (client/src/db/index.ts, client/src/services/localDb.ts)
+- React UI subscribing exclusively to Dexie live queries (client/src/App.tsx, client/src/components/*)
 - Express REST server & health endpoint with static client serving (server/app.ts, server/db.ts, server/index.ts)
-- React PWA shell & health status dashboard (client/src/App.tsx, client/index.html)
-- Automated API health test suite (server/__tests__/api.test.ts)
+- Vitest unit & integration test suites (client/src/__tests__/localDb.test.ts, server/__tests__/api.test.ts)
 - Deployment specification (render.yaml)
 
 External APIs:
@@ -94,7 +131,7 @@ External datasets:
 
 Third-party libraries:
 - react, react-dom
-- dexie, dexie-react-hooks
+- dexie, dexie-react-hooks, fake-indexeddb
 - express, better-sqlite3, cors, dotenv
 - lucide-react
 - vite, @vitejs/plugin-react, vite-plugin-pwa
