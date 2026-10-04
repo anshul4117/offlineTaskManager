@@ -4,5 +4,8 @@ dist-server
 server.db
 server.db-wal
 server.db-shm
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
 .env
 .DS_Store

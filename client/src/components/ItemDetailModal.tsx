@@ -169,21 +169,15 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
         {/* Modal Scrollable Body */}
         <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
-          {/* Metadata Subheader Row */}
+          {/* Subheader Row */}
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '11px',
-            fontFamily: 'var(--font-mono)',
+            fontSize: '12px',
             color: 'var(--text-muted)',
             marginBottom: '16px',
             paddingBottom: '12px',
-            borderBottom: '1px dashed var(--border-color)'
+            borderBottom: '1px solid var(--border-color)'
           }}>
-            <span>Updated: <strong style={{ color: 'var(--text-secondary)' }}>{formattedDate}</strong></span>
-            <span>ID: <strong style={{ color: 'var(--text-secondary)' }}>{checksum}</strong></span>
-            <span>Payload: <strong style={{ color: 'var(--text-secondary)' }}>{payloadKb} KB</strong></span>
+            <span>Last updated: <strong style={{ color: 'var(--text-secondary)' }}>{formattedDate}</strong></span>
           </div>
 
           {/* Branch Conflict Warning Banner */}

@@ -36,6 +36,8 @@ export const App: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mainCreateBtnRef = useRef<HTMLButtonElement>(null);
+  const [isMainBtnVisible, setIsMainBtnVisible] = useState(true);
 
   // Subscribe to syncEngine state changes
   useEffect(() => {
@@ -45,10 +47,21 @@ export const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Seed initial demo dataset on startup if DB is empty
+  // IntersectionObserver to toggle smart floating create notch when main create button scrolls out of view
   useEffect(() => {
-    seedDemoData().catch((err) => console.error('[seedDemoData] Error:', err));
-  }, []);
+    const target = mainCreateBtnRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsMainBtnVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [activeTab]);
 
   // Parse URL search parameters on initial load for tab/note selection persistence
   useEffect(() => {
@@ -322,19 +335,32 @@ export const App: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
 
-        {/* Heading & New Note Action Row */}
+        {/* Heading & New Item Action Row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div>
             <h1 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: '1.2' }}>
-              Your Notes
+              {activeTab === 'tasks'
+                ? 'Your Tasks'
+                : activeTab === 'trash'
+                ? 'Trash'
+                : activeTab === 'pending'
+                ? 'Pending Sync'
+                : activeTab === 'conflicts'
+                ? 'Branch Conflicts'
+                : 'Your Notes'}
             </h1>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Everything stays available, even offline.
+              {activeTab === 'tasks'
+                ? 'Organize your tasks, all available offline.'
+                : activeTab === 'trash'
+                ? 'Soft-deleted records available for restoration.'
+                : 'Everything stays available, even offline.'}
             </p>
           </div>
 
           <button
-            onClick={() => handleCreateNew('note')}
+            ref={mainCreateBtnRef}
+            onClick={() => handleCreateNew(activeTab === 'tasks' ? 'task' : 'note')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -349,7 +375,7 @@ export const App: React.FC = () => {
             }}
           >
             <Plus size={18} />
-            <span>New Note</span>
+            <span>{activeTab === 'tasks' ? 'New Task' : 'New Note'}</span>
           </button>
         </div>
 
@@ -720,37 +746,39 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* Persistent Floating Action Button (FAB) */}
-      <button
-        onClick={() => {
-          const typeToCreate = activeTab === 'tasks' ? 'task' : 'note';
-          handleCreateNew(typeToCreate);
-        }}
-        title={activeTab === 'tasks' ? 'Create New Task' : 'Create New Note'}
-        style={{
-          position: 'fixed',
-          bottom: '28px',
-          right: '28px',
-          zIndex: 90,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '14px 22px',
-          borderRadius: '30px',
-          backgroundColor: 'var(--accent-lime)',
-          color: 'var(--accent-lime-text)',
-          border: 'none',
-          fontWeight: 800,
-          fontSize: '14px',
-          boxShadow: '0 8px 20px rgba(210, 242, 74, 0.45), 0 4px 10px rgba(0, 0, 0, 0.15)',
-          cursor: 'pointer',
-          transition: 'transform 0.15s ease, box-shadow 0.15s ease'
-        }}
-      >
-        <Plus size={22} />
-        <span>{activeTab === 'tasks' ? 'New Task' : 'New Note'}</span>
-      </button>
+      {/* Smart Floating Action Notch (Visible ONLY when main create button is scrolled out of view) */}
+      {!isMainBtnVisible && (
+        <button
+          onClick={() => {
+            const typeToCreate = activeTab === 'tasks' ? 'task' : 'note';
+            handleCreateNew(typeToCreate);
+          }}
+          title={activeTab === 'tasks' ? 'Create New Task' : 'Create New Note'}
+          style={{
+            position: 'fixed',
+            bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
+            right: '28px',
+            zIndex: 90,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '12px 20px',
+            borderRadius: '30px',
+            backgroundColor: 'var(--accent-lime)',
+            color: 'var(--accent-lime-text)',
+            border: 'none',
+            fontWeight: 800,
+            fontSize: '14px',
+            boxShadow: '0 8px 20px rgba(210, 242, 74, 0.45), 0 4px 10px rgba(0, 0, 0, 0.15)',
+            cursor: 'pointer',
+            transition: 'transform 0.15s ease, opacity 0.15s ease'
+          }}
+        >
+          <Plus size={20} />
+          <span>{activeTab === 'tasks' ? 'New Task' : 'New Note'}</span>
+        </button>
+      )}
     </div>
   );
 };

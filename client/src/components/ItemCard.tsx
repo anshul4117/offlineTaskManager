@@ -189,32 +189,16 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         </p>
       </div>
 
-      {/* Card Technical Metadata & Action Footer */}
+      {/* Card Action Footer */}
       <div>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          fontSize: '11px',
-          fontFamily: 'var(--font-mono)',
-          color: 'var(--text-muted)',
           paddingTop: '10px',
           borderTop: '1px solid var(--border-color)',
           marginTop: '6px'
         }}>
-          <div>Checksum: <strong style={{ color: 'var(--text-secondary)' }}>{checksum}</strong></div>
-          <div style={{
-            backgroundColor: '#f1f5f9',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            color: 'var(--text-secondary)'
-          }}>
-            {tagText}
-          </div>
-        </div>
-
-        {/* Actions Row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
           {item.conflict && onResolveConflict ? (
             <button
               onClick={(e) => {
@@ -235,8 +219,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
               <ArrowRight size={14} />
             </button>
           ) : (
-            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-              Payload: {Math.max(0.1, (item.content.length / 1024)).toFixed(1)} KB
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
+              {item.type === 'note' ? 'Note' : 'Task'}
             </span>
           )}
 

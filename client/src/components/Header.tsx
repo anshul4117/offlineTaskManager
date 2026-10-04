@@ -33,29 +33,6 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <div style={{ marginBottom: '24px' }}>
-      {/* Top Runtime Status Ticker Strip */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '6px 12px',
-        borderRadius: 'var(--radius-sm)',
-        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-        fontSize: '11px',
-        fontFamily: 'var(--font-mono)',
-        color: 'var(--text-muted)',
-        marginBottom: '16px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span>● INDEXEDB ENGINE: <strong style={{ color: 'var(--text-primary)' }}>OK (48.1 MB FREE)</strong></span>
-          <span>⚡ CRDT STATE: <strong style={{ color: conflictCount > 0 ? 'var(--accent-red-text)' : 'var(--text-primary)' }}>{conflictCount > 0 ? `DIVERGED (${conflictCount} CONFLICTS)` : 'SYNCHRONIZED'}</strong></span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span>SERVICE WORKER: <strong style={{ color: 'var(--accent-green-text)' }}>ACTIVE (V4.2.1-CACHED)</strong></span>
-          <span>⚡ ZERO LOSS RUNTIME</span>
-        </div>
-      </div>
-
       {/* Main Top Header Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {/* Breadcrumb Path & Mobile Hamburger Toggle */}
