@@ -165,4 +165,69 @@ describe('Server Synchronization Endpoints (/api/sync)', () => {
     expect(record.title).toBe('Pull Target');
     expect(record.type).toBe('task');
   });
+
+  it('POST /api/sync/push restores a server-deleted record when baseVersion matches current server version (Keep Mine)', async () => {
+    const recordId = 'rec-test-105';
+    const now = new Date().toISOString();
+
+    // 1. Create record -> v1
+    await request(app).post('/api/sync/push').send({
+      operations: [
+        {
+          opId: 'op-create-105',
+          recordId,
+          type: 'create',
+          payload: { id: recordId, title: 'Original Title', content: 'Original Body', type: 'note', updatedAt: now, deleted: false },
+          baseVersion: 0,
+          timestamp: now
+        }
+      ]
+    });
+
+    // 2. Delete record on server -> v2 (deleted = 1)
+    await request(app).post('/api/sync/push').send({
+      operations: [
+        {
+          opId: 'op-delete-105',
+          recordId,
+          type: 'delete',
+          payload: { id: recordId, title: 'Original Title', content: 'Original Body', type: 'note', updatedAt: now, deleted: true },
+          baseVersion: 1,
+          timestamp: now
+        }
+      ]
+    });
+
+    const deletedDbRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(recordId) as any;
+    expect(deletedDbRecord.deleted).toBe(1);
+    expect(deletedDbRecord.version).toBe(2);
+
+    // 3. User selects Keep Mine: pushes update op with baseVersion = 2 and deleted = false
+    const restoreRes = await request(app).post('/api/sync/push').send({
+      operations: [
+        {
+          opId: 'op-keep-mine-105',
+          recordId,
+          type: 'update',
+          payload: { id: recordId, title: 'Restored Local Title', content: 'Restored Local Content', type: 'note', updatedAt: now, deleted: false },
+          baseVersion: 2, // matches current server version!
+          timestamp: now
+        }
+      ]
+    });
+
+    expect(restoreRes.status).toBe(200);
+    expect(restoreRes.body.results[0]).toEqual({
+      opId: 'op-keep-mine-105',
+      recordId,
+      status: 'applied',
+      newVersion: 3
+    });
+
+    const restoredDbRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(recordId) as any;
+    expect(restoredDbRecord.deleted).toBe(0);
+    expect(restoredDbRecord.version).toBe(3);
+    expect(restoredDbRecord.title).toBe('Restored Local Title');
+    expect(restoredDbRecord.content).toBe('Restored Local Content');
+  });
 });

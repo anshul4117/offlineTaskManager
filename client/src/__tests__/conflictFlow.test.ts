@@ -137,4 +137,90 @@ describe('Conflict Resolution Lifecycle Integration', () => {
     expect(ops[0].baseVersion).toBe(2);
     expect(ops[0].payload.title).toBe('Merged Task Title');
   });
+
+  it('handles server-deleted conflict with Keep Theirs (accepts deletion)', async () => {
+    const record = await createRecord('Local Unpushed Draft', 'Local Content', 'note');
+
+    const serverSnap = {
+      id: record.id,
+      title: 'Local Unpushed Draft',
+      content: 'Local Content',
+      type: 'note' as const,
+      version: 2,
+      updatedAt: new Date().toISOString(),
+      deleted: true
+    };
+
+    await db.records.update(record.id, { conflict: true, serverRecord: serverSnap });
+
+    await resolveConflict(record.id, 'keep_server');
+
+    const resolved = await getRecord(record.id);
+    expect(resolved?.deleted).toBe(true);
+    expect(resolved?.conflict).toBe(false);
+    expect(resolved?.pending).toBe(false);
+    expect(resolved?.version).toBe(2);
+
+    const outboxOps = await db.outbox.where('recordId').equals(record.id).toArray();
+    expect(outboxOps).toHaveLength(0);
+  });
+
+  it('handles server-deleted conflict with Keep Mine (restores record with server baseVersion)', async () => {
+    const record = await createRecord('Local Preserved Note', 'User content to keep', 'note');
+
+    const serverSnap = {
+      id: record.id,
+      title: 'Local Preserved Note',
+      content: 'User content to keep',
+      type: 'note' as const,
+      version: 2,
+      updatedAt: new Date().toISOString(),
+      deleted: true
+    };
+
+    await db.records.update(record.id, { conflict: true, serverRecord: serverSnap });
+
+    await resolveConflict(record.id, 'keep_local');
+
+    const resolved = await getRecord(record.id);
+    expect(resolved?.title).toBe('Local Preserved Note');
+    expect(resolved?.content).toBe('User content to keep');
+    expect(resolved?.deleted).toBe(false);
+    expect(resolved?.conflict).toBe(false);
+    expect(resolved?.pending).toBe(true);
+    expect(resolved?.version).toBe(2);
+
+    const outboxOps = await db.outbox.where('recordId').equals(record.id).toArray();
+    expect(outboxOps).toHaveLength(1);
+    expect(outboxOps[0].type).toBe('update');
+    expect(outboxOps[0].baseVersion).toBe(2);
+    expect(outboxOps[0].payload.deleted).toBe(false);
+  });
+
+  it('prevents multiple outbox operations on rapid repeated Keep Mine calls', async () => {
+    const record = await createRecord('Rapid Click Note', 'Content', 'note');
+
+    const serverSnap = {
+      id: record.id,
+      title: 'Rapid Click Note',
+      content: 'Content',
+      type: 'note' as const,
+      version: 3,
+      updatedAt: new Date().toISOString(),
+      deleted: true
+    };
+
+    await db.records.update(record.id, { conflict: true, serverRecord: serverSnap });
+
+    // Simulate rapid repeated calls
+    await Promise.all([
+      resolveConflict(record.id, 'keep_local'),
+      resolveConflict(record.id, 'keep_local'),
+      resolveConflict(record.id, 'keep_local')
+    ]);
+
+    const ops = await db.outbox.where('recordId').equals(record.id).toArray();
+    expect(ops).toHaveLength(1);
+    expect(ops[0].baseVersion).toBe(3);
+  });
 });

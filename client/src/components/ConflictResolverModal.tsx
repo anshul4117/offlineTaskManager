@@ -32,7 +32,9 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
   const [isMerging, setIsMerging] = useState(false);
   const [mergedTitle, setMergedTitle] = useState(item.title);
   const [mergedContent, setMergedContent] = useState(
-    `${item.content}\n\n--- Remote Server Version ---\n${serverSnap.content}`
+    serverSnap.deleted
+      ? item.content
+      : `${item.content}\n\n--- Remote Server Version ---\n${serverSnap.content || ''}`
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -49,11 +51,16 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
         updatedAt: item.updatedAt,
         deleted: false
       };
-      setMergedContent(`${item.content}\n\n--- Remote Server Version ---\n${snap.content}`);
+      setMergedContent(
+        snap.deleted
+          ? item.content
+          : `${item.content}\n\n--- Remote Server Version ---\n${snap.content || ''}`
+      );
     }
   }, [item?.id, item?.version, item?.updatedAt]);
 
   const handleKeepLocal = async () => {
+    if (isSubmitting) return;
     try {
       setIsSubmitting(true);
       await onResolveKeepLocal(item.id);
@@ -64,6 +71,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
   };
 
   const handleKeepServer = async () => {
+    if (isSubmitting) return;
     try {
       setIsSubmitting(true);
       await onResolveKeepServer(item.id);
@@ -74,6 +82,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
   };
 
   const handleMergeSubmit = async () => {
+    if (isSubmitting) return;
     try {
       setIsSubmitting(true);
       await onResolveMerge(item.id, mergedTitle, mergedContent);
@@ -189,20 +198,6 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
               }}
             >
               Keep Theirs (Cloud)
-            </button>
-            <button
-              onClick={() => setIsMerging(true)}
-              disabled={isSubmitting}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 'var(--radius-sm)',
-                backgroundColor: 'var(--text-primary)',
-                color: 'var(--accent-lime)',
-                fontSize: '12px',
-                fontWeight: 800
-              }}
-            >
-              ⚡ Auto Merge
             </button>
           </div>
         </div>

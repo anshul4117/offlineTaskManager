@@ -356,7 +356,9 @@ export async function resolveConflict(
         updatedAt: now
       });
       await db.outbox.put(outboxOp);
-    } else if (resolution === 'merge' && mergedContent) {
+    } else if (resolution === 'merge') {
+      const finalTitle = mergedContent?.title ?? record.title;
+      const finalContent = mergedContent?.content ?? record.content;
       const opId = crypto.randomUUID();
       const outboxOp: OutboxOperation = {
         opId,
@@ -364,8 +366,8 @@ export async function resolveConflict(
         type: 'update',
         payload: {
           id,
-          title: mergedContent.title,
-          content: mergedContent.content,
+          title: finalTitle,
+          content: finalContent,
           type: record.type,
           updatedAt: now,
           deleted: false
@@ -378,8 +380,8 @@ export async function resolveConflict(
 
       await db.records.put({
         id,
-        title: mergedContent.title,
-        content: mergedContent.content,
+        title: finalTitle,
+        content: finalContent,
         type: record.type,
         version: serverSnap.version,
         updatedAt: now,

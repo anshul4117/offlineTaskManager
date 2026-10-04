@@ -136,16 +136,14 @@ export function processPushOperations(operations: PushOperationInput[]): {
           newVersion: version
         });
       } else if (op.type === 'update') {
-        if (!serverRec || serverRec.deleted === 1) {
+        if (!serverRec) {
           hasConflict = true;
           results.push({
             opId: op.opId,
             recordId: op.recordId,
             status: 'conflict',
-            error: serverRec?.deleted === 1 
-              ? 'Record has been deleted on server.' 
-              : 'Record does not exist on server.',
-            serverRecord: serverRec ? formatServerRecordForClient(serverRec) : undefined
+            error: 'Record does not exist on server.',
+            serverRecord: undefined
           });
           continue;
         }
@@ -156,7 +154,9 @@ export function processPushOperations(operations: PushOperationInput[]): {
             opId: op.opId,
             recordId: op.recordId,
             status: 'conflict',
-            error: `Stale base version ${op.baseVersion}. Current server version is ${serverRec.version}.`,
+            error: serverRec.deleted === 1 
+              ? 'Record has been deleted on server.' 
+              : `Stale base version ${op.baseVersion}. Current server version is ${serverRec.version}.`,
             serverRecord: formatServerRecordForClient(serverRec)
           });
           continue;
