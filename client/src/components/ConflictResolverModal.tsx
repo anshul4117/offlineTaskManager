@@ -17,13 +17,41 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
   onResolveKeepServer,
   onResolveMerge
 }) => {
-  if (!item || !item.conflict || !item.serverRecord) return null;
+  if (!item || !item.conflict) return null;
 
-  const serverSnap = item.serverRecord;
+  const serverSnap = item.serverRecord || {
+    id: item.id,
+    title: item.title,
+    content: item.content,
+    type: item.type,
+    version: item.version > 0 ? item.version : 1,
+    updatedAt: item.updatedAt,
+    deleted: false
+  };
+
   const [isMerging, setIsMerging] = useState(false);
   const [mergedTitle, setMergedTitle] = useState(item.title);
-  const [mergedContent, setMergedContent] = useState(`${item.content}\n\n--- Remote Server Version ---\n${serverSnap.content}`);
+  const [mergedContent, setMergedContent] = useState(
+    `${item.content}\n\n--- Remote Server Version ---\n${serverSnap.content}`
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (item) {
+      setIsMerging(false);
+      setMergedTitle(item.title);
+      const snap = item.serverRecord || {
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        type: item.type,
+        version: item.version > 0 ? item.version : 1,
+        updatedAt: item.updatedAt,
+        deleted: false
+      };
+      setMergedContent(`${item.content}\n\n--- Remote Server Version ---\n${snap.content}`);
+    }
+  }, [item?.id, item?.version, item?.updatedAt]);
 
   const handleKeepLocal = async () => {
     try {

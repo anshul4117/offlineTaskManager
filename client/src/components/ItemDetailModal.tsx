@@ -209,7 +209,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
               {onResolveConflict && (
                 <button
-                  onClick={() => onResolveConflict(item)}
+                  onClick={() => {
+                    onClose();
+                    onResolveConflict(item);
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

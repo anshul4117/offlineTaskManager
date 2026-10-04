@@ -279,14 +279,17 @@ export async function resolveConflict(
   mergedContent?: { title: string; content: string }
 ): Promise<void> {
   const record = await db.records.get(id);
-  if (!record || !record.serverRecord) {
-    if (record) {
-      await db.records.update(id, { conflict: false, serverRecord: undefined });
-    }
-    return;
-  }
+  if (!record) return;
 
-  const serverSnap = record.serverRecord;
+  const serverSnap = record.serverRecord || {
+    id: record.id,
+    title: record.title,
+    content: record.content,
+    type: record.type,
+    version: record.version > 0 ? record.version : 1,
+    updatedAt: record.updatedAt,
+    deleted: false
+  };
   const now = new Date().toISOString();
 
   await db.transaction('rw', [db.records, db.outbox], async () => {

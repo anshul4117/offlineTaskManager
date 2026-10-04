@@ -137,6 +137,10 @@ export const App: React.FC = () => {
     ? allRecords.find((r) => r.id === deletingItem.id) || deletingItem
     : null;
 
+  const currentConflictItem = conflictItem
+    ? allRecords.find((r) => r.id === conflictItem.id) || conflictItem
+    : null;
+
   const handleSelectTab = (tab: any) => {
     setActiveTab(tab);
     setIsMobileMenuOpen(false);
@@ -363,7 +367,13 @@ export const App: React.FC = () => {
             onToggleSimulatedOffline={() => setIsSimulatedOffline(!isSimulatedOffline)}
             onOpenOutboxInspector={() => setIsOutboxModalOpen(true)}
             onSyncNow={() => syncEngine.triggerSync()}
-            onResolveConflict={() => setActiveTab('conflicts')}
+            onResolveConflict={() => {
+              setActiveTab('conflicts');
+              const firstConflict = allRecords.find((r) => r.conflict);
+              if (firstConflict) {
+                setConflictItem(firstConflict);
+              }
+            }}
           />
         </div>
 
@@ -694,11 +704,20 @@ export const App: React.FC = () => {
 
       {/* Conflict Resolver Modal */}
       <ConflictResolverModal
-        item={conflictItem}
+        item={currentConflictItem}
         onClose={() => setConflictItem(null)}
-        onResolveKeepLocal={async (id) => { await resolveConflict(id, 'keep_local'); }}
-        onResolveKeepServer={async (id) => { await resolveConflict(id, 'keep_server'); }}
-        onResolveMerge={async (id, title, content) => { await resolveConflict(id, 'merge', { title, content }); }}
+        onResolveKeepLocal={async (id) => {
+          await resolveConflict(id, 'keep_local');
+          setConflictItem(null);
+        }}
+        onResolveKeepServer={async (id) => {
+          await resolveConflict(id, 'keep_server');
+          setConflictItem(null);
+        }}
+        onResolveMerge={async (id, title, content) => {
+          await resolveConflict(id, 'merge', { title, content });
+          setConflictItem(null);
+        }}
       />
 
       {/* Persistent Floating Action Button (FAB) */}
