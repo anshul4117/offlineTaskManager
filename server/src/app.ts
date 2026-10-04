@@ -7,8 +7,12 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 export const app = express();
 
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : '*';
+
+app.use(cors({ origin: allowedOrigins }));
+app.use(express.json({ limit: '1mb' }));
 
 // Health Check Endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
