@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db/index.js';
 import type { LocalRecord, ItemType } from './types/index.js';
-import { createRecord, updateRecord, deleteRecord, restoreRecord, resolveConflict } from './services/localDb.js';
+import { createRecord, updateRecord, deleteRecord, restoreRecord, resolveConflict, seedDemoData } from './services/localDb.js';
 import { syncEngine } from './services/syncEngine.js';
 import { Sidebar } from './components/Sidebar.js';
 import { Header } from './components/Header.js';
@@ -23,6 +23,34 @@ export const App: React.FC = () => {
   const [conflictItem, setConflictItem] = useState<LocalRecord | null>(null);
   const [isOutboxModalOpen, setIsOutboxModalOpen] = useState(false);
   const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
+  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Subscribe to syncEngine state changes
+  useEffect(() => {
+    const unsubscribe = syncEngine.subscribe((state) => {
+      setSyncState(state);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Seed initial demo dataset on startup if DB is empty
+  useEffect(() => {
+    seedDemoData().catch((err) => console.error('[seedDemoData] Error:', err));
+  }, []);
+
+  // Cmd+K / Ctrl+K keyboard shortcut listener for search bar focus
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Read application state EXCLUSIVELY from Dexie IndexedDB
   const allRecords = useLiveQuery(() => db.records.toArray(), []) || [];
@@ -87,7 +115,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-light)' }}>
+    <div className="app-layout" style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-light)' }}>
       {/* Left Sidebar */}
       <Sidebar
         activeTab={activeTab}
@@ -101,7 +129,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Center Notes Explorer */}
-      <main style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: '1200px' }}>
+      <main className="app-main" style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: '1200px' }}>
         {/* Stitch Header Bar */}
         <Header
           pendingOutboxCount={pendingOutboxCount}
@@ -149,6 +177,7 @@ export const App: React.FC = () => {
             conflictCount={conflictCount}
             isOnline={!isSimulatedOffline}
             isSimulatedOffline={isSimulatedOffline}
+            isSyncing={syncState === 'syncing'}
             onToggleSimulatedOffline={() => setIsSimulatedOffline(!isSimulatedOffline)}
             onOpenOutboxInspector={() => setIsOutboxModalOpen(true)}
             onSyncNow={() => syncEngine.triggerSync()}
@@ -244,6 +273,7 @@ export const App: React.FC = () => {
             <div style={{ position: 'relative', flex: 1 }}>
               <Search size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search markdown, tags, payload..."
                 value={searchQuery}
@@ -297,12 +327,31 @@ export const App: React.FC = () => {
         {/* Content Items Grid */}
         {filteredRecords.length === 0 ? (
           <EmptyState
-            title={activeTab === 'trash' ? 'Trash is empty' : 'No notes found'}
-            description={searchQuery ? 'No notes match your search query.' : 'Click "New Note" to create your first offline-first note.'}
-            onCreateNew={activeTab !== 'trash' ? () => handleCreateNew('note') : undefined}
+            type={activeTab === 'pending' ? 'pending' : activeTab === 'conflicts' ? 'conflicts' : activeTab === 'trash' ? 'trash' : 'notes'}
+            title={
+              activeTab === 'trash'
+                ? 'Trash is empty'
+                : activeTab === 'pending'
+                ? 'No pending changes queued'
+                : activeTab === 'conflicts'
+                ? 'No version conflicts detected'
+                : searchQuery
+                ? 'No matching notes found'
+                : 'No notes in IndexedDB'
+            }
+            description={
+              activeTab === 'pending'
+                ? 'All local edits have successfully synchronized with the backend.'
+                : activeTab === 'conflicts'
+                ? 'Your local IndexedDB and cloud database versions are in 100% sync.'
+                : searchQuery
+                ? 'Try broadening your search query or clear the filter.'
+                : 'Click "New Note" to create your first offline-first note.'
+            }
+            onCreateNew={activeTab !== 'trash' && activeTab !== 'conflicts' && activeTab !== 'pending' ? () => handleCreateNew('note') : undefined}
           />
         ) : (
-          <div style={{
+          <div className="items-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
             gap: '20px'

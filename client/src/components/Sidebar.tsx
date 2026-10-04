@@ -23,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleSimulatedOffline
 }) => {
   return (
-    <aside style={{
+    <aside className="sidebar-aside" style={{
       width: '240px',
       backgroundColor: 'var(--bg-sidebar)',
       borderRight: '1px solid var(--border-color)',

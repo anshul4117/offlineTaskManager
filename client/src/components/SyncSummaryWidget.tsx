@@ -7,6 +7,7 @@ interface SyncSummaryWidgetProps {
   conflictCount: number;
   isOnline: boolean;
   isSimulatedOffline: boolean;
+  isSyncing?: boolean;
   onToggleSimulatedOffline: () => void;
   onOpenOutboxInspector: () => void;
   onSyncNow?: () => void;
@@ -18,10 +19,28 @@ export const SyncSummaryWidget: React.FC<SyncSummaryWidgetProps> = ({
   conflictCount,
   isOnline,
   isSimulatedOffline,
+  isSyncing = false,
   onToggleSimulatedOffline,
   onOpenOutboxInspector,
   onSyncNow
 }) => {
+  const getStatusLabel = () => {
+    if (isSimulatedOffline) return 'Offline Mode (Local Storage Active)';
+    if (conflictCount > 0) return `Conflict Detected • ${conflictCount} in conflict`;
+    if (isSyncing) return `Syncing • Processing queue...`;
+    if (pendingCount > 0) return `Pending • ${pendingCount} in queue`;
+    return 'Synced • All changes persistent';
+  };
+
+  const getStatusColor = () => {
+    if (isSimulatedOffline) return { bg: 'rgba(239, 68, 68, 0.2)', text: '#f87171' };
+    if (conflictCount > 0) return { bg: 'rgba(239, 68, 68, 0.2)', text: '#f87171' };
+    if (isSyncing || pendingCount > 0) return { bg: 'rgba(210, 242, 74, 0.2)', text: 'var(--accent-lime)' };
+    return { bg: 'rgba(16, 185, 129, 0.2)', text: '#34d399' };
+  };
+
+  const statusColors = getStatusColor();
+
   return (
     <div style={{
       backgroundColor: 'var(--bg-dark-banner)',
@@ -42,16 +61,8 @@ export const SyncSummaryWidget: React.FC<SyncSummaryWidgetProps> = ({
             gap: '6px',
             padding: '4px 10px',
             borderRadius: '20px',
-            backgroundColor: isSimulatedOffline
-              ? 'rgba(239, 68, 68, 0.2)'
-              : pendingCount > 0
-              ? 'rgba(210, 242, 74, 0.2)'
-              : 'rgba(16, 185, 129, 0.2)',
-            color: isSimulatedOffline
-              ? '#f87171'
-              : pendingCount > 0
-              ? 'var(--accent-lime)'
-              : '#34d399',
+            backgroundColor: statusColors.bg,
+            color: statusColors.text,
             fontSize: '12px',
             fontWeight: 700,
             fontFamily: 'var(--font-mono)'
@@ -62,7 +73,7 @@ export const SyncSummaryWidget: React.FC<SyncSummaryWidgetProps> = ({
               borderRadius: '50%',
               backgroundColor: 'currentColor'
             }} />
-            {isSimulatedOffline ? 'Offline Mode' : pendingCount > 0 ? `Syncing • ${pendingCount} in queue` : 'IndexedDB Engine Live'}
+            {getStatusLabel()}
           </span>
 
           <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
@@ -126,20 +137,23 @@ export const SyncSummaryWidget: React.FC<SyncSummaryWidgetProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={onSyncNow || onOpenOutboxInspector}
+            disabled={isSyncing || isSimulatedOffline}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               padding: '8px 16px',
               borderRadius: 'var(--radius-sm)',
-              backgroundColor: 'var(--accent-lime)',
-              color: 'var(--accent-lime-text)',
+              backgroundColor: isSyncing || isSimulatedOffline ? '#475569' : 'var(--accent-lime)',
+              color: isSyncing || isSimulatedOffline ? '#94a3b8' : 'var(--accent-lime-text)',
               fontSize: '13px',
-              fontWeight: 800
+              fontWeight: 800,
+              cursor: isSyncing || isSimulatedOffline ? 'not-allowed' : 'pointer',
+              opacity: isSyncing || isSimulatedOffline ? 0.7 : 1
             }}
           >
-            <RefreshCw size={14} />
-            <span>Sync Now</span>
+            <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
           </button>
 
           <button

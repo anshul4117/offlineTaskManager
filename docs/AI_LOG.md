@@ -242,6 +242,38 @@ Accepted
 
 ---
 
+## 2026-10-04 — Phase 8: UX Polish, Stitch Design Alignment & Demo Data
+
+**AI tool:**
+Google Antigravity
+
+**Area:**
+Frontend / UX / Design System / Responsiveness / Accessibility
+
+**What AI assisted with:**
+Polished application UX and aligned design system with Google Stitch spec across all screen viewports. Updated `client/src/index.css` with responsive media query rules, active button scale micro-animations (`button:active`), focus outlines (`:focus-visible`), and loading spinners. Added automatic demo dataset seeder `seedDemoData()` in `client/src/services/localDb.ts` initializing realistic offline architecture notes and queued outbox ops when local database is empty on first load. Enhanced `SyncSummaryWidget.tsx` with dynamic sync engine status subscriber (`Syncing...`, `Offline Mode`, `Pending (N)`, `Conflicts (N)`, `Synced`) and spinning refresh icon. Added `Cmd+K` / `Ctrl+K` keyboard shortcut listener in `App.tsx` for instant search bar focus. Polished `EmptyState.tsx` with contextual icons, Next Step descriptions, and action triggers across All, Pending, Conflicts, Trash, and Search tabs.
+
+**Files affected:**
+
+* `client/src/index.css`
+* `client/src/services/localDb.ts`
+* `client/src/components/SyncSummaryWidget.tsx`
+* `client/src/components/EmptyState.tsx`
+* `client/src/components/Sidebar.tsx`
+* `client/src/App.tsx`
+* `docs/AI_LOG.md`
+
+**Human review:**
+Reviewed desktop, tablet, and mobile responsiveness. Verified zero horizontal overflow, accessible focus rings, spinning sync indicators, keyboard shortcuts, and seed demo dataset persistence.
+
+**Verification:**
+Executed `npm test` (passed 25/25 unit and integration tests across 6 test files), `npm run build` (compiled client bundle & PWA service worker with 0 errors).
+
+**Final status:**
+Accepted
+
+---
+
 # Final Disclosure
 
 To be completed in Phase 9 after reviewing this log:
@@ -255,7 +287,7 @@ AI-assisted components:
 - Client push/pull sync engine & concurrency lock (client/src/services/syncEngine.ts)
 - Server REST sync API endpoints, SQLite opId idempotency & version conflict detection (server/services/syncService.ts, server/routes/syncRoutes.ts)
 - Conflict detection & user-controlled resolution engine (Keep Mine, Keep Theirs, Merge Manually) (client/src/services/localDb.ts, client/src/components/ConflictResolverModal.tsx)
-- Google Stitch UI design visual alignment (client/src/components/*, client/src/index.css, client/src/App.tsx)
+- Google Stitch UI design visual alignment & UX polish (client/src/components/*, client/src/index.css, client/src/App.tsx)
 - Express REST server & health endpoint with static client serving (server/app.ts, server/db.ts, server/index.ts)
 - Vitest unit & integration test suites (client/src/__tests__/*, server/__tests__/*)
 - Deployment specification (render.yaml)

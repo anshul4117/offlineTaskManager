@@ -410,8 +410,82 @@ export async function getActiveRecords(): Promise<LocalRecord[]> {
 }
 
 /**
- * Gets all outbox operations ordered by timestamp.
+ * Retrieves all outbox operations ordered by timestamp.
  */
 export async function getOutboxOperations(): Promise<OutboxOperation[]> {
   return await db.outbox.orderBy('timestamp').toArray();
+}
+
+/**
+ * Seeds initial realistic demo dataset if local IndexedDB is completely empty.
+ */
+export async function seedDemoData(): Promise<void> {
+  const count = await db.records.count();
+  if (count > 0) return;
+
+  const now = new Date().toISOString();
+
+  const note1Id = crypto.randomUUID();
+  const note2Id = crypto.randomUUID();
+  const note3Id = crypto.randomUUID();
+  const op3Id = crypto.randomUUID();
+
+  await db.transaction('rw', [db.records, db.outbox], async () => {
+    // Record 1: Synced Note
+    await db.records.put({
+      id: note1Id,
+      title: 'Offline Synchronization Architecture Spec',
+      content: '# Offline Synchronization Architecture\n\n- Local-first IndexedDB storage via Dexie.js\n- Client-generated UUIDs (v4)\n- Outbox mutation queue with coalescing\n- Version-based conflict detection with HTTP 409 semantics',
+      type: 'note',
+      updatedAt: now,
+      version: 1,
+      deleted: false,
+      pending: false,
+      conflict: false
+    });
+
+    // Record 2: Synced Task
+    await db.records.put({
+      id: note2Id,
+      title: 'Production Readiness & Testing Checklist',
+      content: '# Hackathon Deliverables\n\n- [x] End-to-end Vitest & Supertest suite passing\n- [x] Single Express deployment serving client dist\n- [x] PWA offline caching via Workbox service worker\n- [x] Version conflict resolution modal',
+      type: 'task',
+      updatedAt: now,
+      version: 2,
+      deleted: false,
+      pending: false,
+      conflict: false
+    });
+
+    // Record 3: Unsynced local edit with queued outbox op
+    await db.records.put({
+      id: note3Id,
+      title: 'Google Stitch UI Alignment Audit',
+      content: '# Stitch Design Tokens\n\n- Primary chartreuse lime accent (#d2f24a)\n- Dark sync summary banner (#1e232a)\n- Side-by-side split conflict diff visualizer',
+      type: 'note',
+      updatedAt: now,
+      version: 0,
+      deleted: false,
+      pending: true,
+      conflict: false
+    });
+
+    await db.outbox.put({
+      opId: op3Id,
+      recordId: note3Id,
+      type: 'create',
+      payload: {
+        id: note3Id,
+        title: 'Google Stitch UI Alignment Audit',
+        content: '# Stitch Design Tokens\n\n- Primary chartreuse lime accent (#d2f24a)\n- Dark sync summary banner (#1e232a)\n- Side-by-side split conflict diff visualizer',
+        type: 'note',
+        updatedAt: now,
+        deleted: false
+      },
+      baseVersion: 0,
+      timestamp: now,
+      status: 'pending',
+      retryCount: 0
+    });
+  });
 }

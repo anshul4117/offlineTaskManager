@@ -62,6 +62,16 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+  transition: transform 0.12s ease, opacity 0.12s ease, background-color 0.12s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent-lime);
+  outline-offset: 2px;
 }
 
 input, textarea, select {
@@ -92,4 +102,24 @@ input, textarea, select {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column !important;
+  }
+  .sidebar-aside {
+    width: 100% !important;
+    min-height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 16px !important;
+  }
+  .app-main {
+    padding: 16px 16px !important;
+  }
+  .items-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
