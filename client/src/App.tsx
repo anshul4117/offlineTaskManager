@@ -9,6 +9,8 @@ import { Header } from './components/Header.js';
 import { SyncSummaryWidget } from './components/SyncSummaryWidget.js';
 import { ItemCard } from './components/ItemCard.js';
 import { ItemEditorModal } from './components/ItemEditorModal.js';
+import { ItemDetailModal } from './components/ItemDetailModal.js';
+import { DeleteConfirmationModal } from './components/DeleteConfirmationModal.js';
 import { OutboxInspectorModal } from './components/OutboxInspectorModal.js';
 import { ConflictResolverModal } from './components/ConflictResolverModal.js';
 import { EmptyState } from './components/EmptyState.js';
@@ -17,9 +19,13 @@ import { Plus, Search, SlidersHorizontal, AlertTriangle, Clock, CheckCircle2 } f
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'notes' | 'tasks' | 'pending' | 'conflicts' | 'trash'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [viewingItem, setViewingItem] = useState<LocalRecord | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorType, setEditorType] = useState<ItemType>('note');
   const [editingItem, setEditingItem] = useState<LocalRecord | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingItem, setDeletingItem] = useState<LocalRecord | null>(null);
   const [conflictItem, setConflictItem] = useState<LocalRecord | null>(null);
   const [isOutboxModalOpen, setIsOutboxModalOpen] = useState(false);
   const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
@@ -52,9 +58,8 @@ export const App: React.FC = () => {
     if (urlNoteId) {
       db.records.get(urlNoteId).then((rec) => {
         if (rec && !rec.deleted) {
-          setEditingItem(rec);
-          setEditorType(rec.type);
-          setIsEditorOpen(true);
+          setViewingItem(rec);
+          setIsDetailOpen(true);
         } else {
           // Clean up invalid or tombstoned note parameter from URL
           const newParams = new URLSearchParams(window.location.search);
@@ -78,17 +83,19 @@ export const App: React.FC = () => {
       if (urlNoteId) {
         db.records.get(urlNoteId).then((rec) => {
           if (rec && !rec.deleted) {
-            setEditingItem(rec);
-            setEditorType(rec.type);
-            setIsEditorOpen(true);
-          } else {
+            setViewingItem(rec);
+            setIsDetailOpen(true);
             setIsEditorOpen(false);
-            setEditingItem(null);
+          } else {
+            setIsDetailOpen(false);
+            setIsEditorOpen(false);
+            setViewingItem(null);
           }
         });
       } else {
+        setIsDetailOpen(false);
         setIsEditorOpen(false);
-        setEditingItem(null);
+        setViewingItem(null);
       }
     };
 
@@ -112,9 +119,17 @@ export const App: React.FC = () => {
   const allRecords = useLiveQuery(() => db.records.toArray(), []) || [];
   const pendingOutboxCount = useLiveQuery(() => db.outbox.count(), []) || 0;
 
-  // Derived reactive item for detail editor modal
+  // Derived reactive items for modals
+  const currentViewingItem = viewingItem
+    ? allRecords.find((r) => r.id === viewingItem.id) || viewingItem
+    : null;
+
   const currentEditingItem = editingItem
     ? allRecords.find((r) => r.id === editingItem.id) || editingItem
+    : null;
+
+  const currentDeletingItem = deletingItem
+    ? allRecords.find((r) => r.id === deletingItem.id) || deletingItem
     : null;
 
   const handleSelectTab = (tab: any) => {
@@ -128,13 +143,36 @@ export const App: React.FC = () => {
   };
 
   const handleCreateNew = (type: ItemType) => {
+    setIsDetailOpen(false);
+    setViewingItem(null);
     setEditingItem(null);
     setEditorType(type);
     setIsEditorOpen(true);
     setIsMobileMenuOpen(false);
   };
 
-  const handleEdit = (item: LocalRecord) => {
+  const handleViewItem = (item: LocalRecord) => {
+    setViewingItem(item);
+    setIsDetailOpen(true);
+    setIsMobileMenuOpen(false);
+    const params = new URLSearchParams(window.location.search);
+    params.set('note', item.id);
+    window.history.pushState(null, '', '?' + params.toString());
+  };
+
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false);
+    setViewingItem(null);
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('note')) {
+      params.delete('note');
+      const newSearch = params.toString() ? '?' + params.toString() : window.location.pathname;
+      window.history.pushState(null, '', newSearch);
+    }
+  };
+
+  const handleEditItem = (item: LocalRecord) => {
+    setIsDetailOpen(false);
     setEditingItem(item);
     setEditorType(item.type);
     setIsEditorOpen(true);
@@ -147,12 +185,49 @@ export const App: React.FC = () => {
   const handleCloseEditor = () => {
     setIsEditorOpen(false);
     setEditingItem(null);
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('note')) {
-      params.delete('note');
-      const newSearch = params.toString() ? '?' + params.toString() : window.location.pathname;
-      window.history.pushState(null, '', newSearch);
+    if (viewingItem) {
+      setIsDetailOpen(true);
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('note')) {
+        params.delete('note');
+        const newSearch = params.toString() ? '?' + params.toString() : window.location.pathname;
+        window.history.pushState(null, '', newSearch);
+      }
     }
+  };
+
+  const handleRequestDelete = (item: LocalRecord) => {
+    setDeletingItem(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async (id: string) => {
+    await deleteRecord(id);
+    setIsDeleteModalOpen(false);
+    setDeletingItem(null);
+    if (viewingItem?.id === id) {
+      handleCloseDetail();
+    }
+  };
+
+  const handleSaveItem = async (title: string, content: string, type: ItemType, id?: string) => {
+    if (id) {
+      await updateRecord(id, title, content, type);
+      const updated = await db.records.get(id);
+      if (updated) {
+        setViewingItem(updated);
+        setIsDetailOpen(true);
+      }
+    } else {
+      await createRecord(title, content, type);
+    }
+    setIsEditorOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleRestoreItem = async (id: string) => {
+    await restoreRecord(id);
   };
 
   // Filter records based on active tab and search query
@@ -184,23 +259,6 @@ export const App: React.FC = () => {
   const conflictCount = activeRecords.filter((r) => r.conflict).length;
   const syncedCount = activeRecords.filter((r) => !r.pending && !r.conflict).length;
   const trashCount = allRecords.filter((r) => r.deleted).length;
-
-  const handleSaveItem = async (title: string, content: string, type: ItemType, id?: string) => {
-    if (id) {
-      await updateRecord(id, title, content, type);
-    } else {
-      await createRecord(title, content, type);
-    }
-    handleCloseEditor();
-  };
-
-  const handleDeleteItem = async (id: string) => {
-    await deleteRecord(id);
-  };
-
-  const handleRestoreItem = async (id: string) => {
-    await restoreRecord(id);
-  };
 
   return (
     <div className="app-layout" style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-light)' }}>
@@ -451,8 +509,9 @@ export const App: React.FC = () => {
               <ItemCard
                 key={item.id}
                 item={item}
-                onEdit={handleEdit}
-                onDelete={handleDeleteItem}
+                onView={handleViewItem}
+                onEdit={handleEditItem}
+                onDelete={handleRequestDelete}
                 onRestore={handleRestoreItem}
                 onResolveConflict={(rec) => setConflictItem(rec)}
               />
@@ -461,6 +520,16 @@ export const App: React.FC = () => {
         )}
       </main>
 
+      {/* Read-Only Item Detail Modal */}
+      <ItemDetailModal
+        isOpen={isDetailOpen}
+        item={currentViewingItem}
+        onClose={handleCloseDetail}
+        onEdit={handleEditItem}
+        onDelete={handleRequestDelete}
+        onResolveConflict={(rec) => setConflictItem(rec)}
+      />
+
       {/* Editor Modal */}
       <ItemEditorModal
         isOpen={isEditorOpen}
@@ -468,6 +537,17 @@ export const App: React.FC = () => {
         editingItem={currentEditingItem}
         onClose={handleCloseEditor}
         onSave={handleSaveItem}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        item={currentDeletingItem}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingItem(null);
+        }}
+        onConfirmDelete={handleConfirmDelete}
       />
 
       {/* Outbox Inspector Modal */}

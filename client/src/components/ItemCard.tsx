@@ -4,14 +4,16 @@ import { Edit2, Trash2, RotateCcw, AlertTriangle, Clock, CheckCircle2, ArrowRigh
 
 interface ItemCardProps {
   item: LocalRecord;
+  onView: (item: LocalRecord) => void;
   onEdit: (item: LocalRecord) => void;
-  onDelete: (id: string) => void;
+  onDelete: (item: LocalRecord) => void;
   onRestore?: (id: string) => void;
   onResolveConflict?: (item: LocalRecord) => void;
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({
   item,
+  onView,
   onEdit,
   onDelete,
   onRestore,
@@ -28,7 +30,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
   return (
     <div
-      onClick={() => onEdit(item)}
+      onClick={() => onView(item)}
       style={{
         backgroundColor: 'var(--bg-card)',
         borderRadius: 'var(--radius-lg)',
@@ -260,9 +262,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDelete(item.id);
+                    onDelete(item);
                   }}
-                  title="Soft Delete"
+                  title="Delete Record"
                   style={{
                     padding: '5px',
                     borderRadius: '4px',
