@@ -9,6 +9,7 @@ interface SyncSummaryWidgetProps {
   isSimulatedOffline: boolean;
   onToggleSimulatedOffline: () => void;
   onOpenOutboxInspector: () => void;
+  onSyncNow?: () => void;
 }
 
 export const SyncSummaryWidget: React.FC<SyncSummaryWidgetProps> = ({
@@ -18,7 +19,8 @@ export const SyncSummaryWidget: React.FC<SyncSummaryWidgetProps> = ({
   isOnline,
   isSimulatedOffline,
   onToggleSimulatedOffline,
-  onOpenOutboxInspector
+  onOpenOutboxInspector,
+  onSyncNow
 }) => {
   return (
     <div style={{
@@ -123,7 +125,7 @@ export const SyncSummaryWidget: React.FC<SyncSummaryWidgetProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
-            onClick={onOpenOutboxInspector}
+            onClick={onSyncNow || onOpenOutboxInspector}
             style={{
               display: 'flex',
               alignItems: 'center',

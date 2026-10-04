@@ -3,6 +3,8 @@ import cors from 'cors';
 import path from 'path';
 import { getHealthStatus } from './db.js';
 
+import { syncRouter } from './routes/syncRoutes.js';
+
 export const app = express();
 
 app.use(cors());
@@ -26,6 +28,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
     database: 'connected'
   });
 });
+
+// Sync Endpoints
+app.use('/api/sync', syncRouter);
 
 // Production Static File Serving for client/dist
 const distPath = path.resolve(process.cwd(), 'client', 'dist');

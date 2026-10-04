@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db/index.js';
 import type { LocalRecord, ItemType } from './types/index.js';
 import { createRecord, updateRecord, deleteRecord, restoreRecord, resolveConflict } from './services/localDb.js';
+import { syncEngine } from './services/syncEngine.js';
 import { Sidebar } from './components/Sidebar.js';
 import { Header } from './components/Header.js';
 import { SyncSummaryWidget } from './components/SyncSummaryWidget.js';
@@ -150,6 +151,7 @@ export const App: React.FC = () => {
             isSimulatedOffline={isSimulatedOffline}
             onToggleSimulatedOffline={() => setIsSimulatedOffline(!isSimulatedOffline)}
             onOpenOutboxInspector={() => setIsOutboxModalOpen(true)}
+            onSyncNow={() => syncEngine.triggerSync()}
           />
         </div>
 

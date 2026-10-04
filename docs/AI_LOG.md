@@ -179,6 +179,40 @@ Accepted
 
 ---
 
+## 2026-10-04 — Phase 5: Server Synchronization Layer & Client Sync Engine
+
+**AI tool:**
+Google Antigravity
+
+**Area:**
+Backend / Synchronization Engine / Idempotency / Conflict Detection / Testing
+
+**What AI assisted with:**
+Implemented full server synchronization layer and client synchronization engine. Created server transaction handler `server/services/syncService.ts` processing `POST /api/sync/push` operations with SQLite `operations` table idempotency check (`opId`), server version comparison (`op.baseVersion !== record.version`), soft delete tombstone updates, and HTTP 409 Conflict return semantics. Implemented `GET /api/sync/pull` timestamp cursor query. Built client `client/src/services/syncEngine.ts` featuring a single execution lock (`isSyncingLock`), outbox queue push processing, IndexedDB state updates on push success, pull cursor merging into Dexie `records` protecting unpushed local changes, bounded exponential backoff retries, and automatic synchronization triggers on connectivity restoration. Added backend integration tests (`server/__tests__/sync.test.ts`) and client engine unit tests (`client/src/__tests__/syncEngine.test.ts`).
+
+**Files affected:**
+
+* `server/services/syncService.ts`
+* `server/routes/syncRoutes.ts`
+* `server/app.ts`
+* `client/src/services/syncEngine.ts`
+* `client/src/components/SyncSummaryWidget.tsx`
+* `client/src/App.tsx`
+* `server/__tests__/sync.test.ts`
+* `client/src/__tests__/syncEngine.test.ts`
+* `docs/AI_LOG.md`
+
+**Human review:**
+Reviewed push/pull transaction boundaries, `opId` idempotency guarantees, HTTP 409 conflict return semantics, single lock execution, cursor advancing, and verified local unpushed changes are protected during pull merge.
+
+**Verification:**
+Executed `npm test` (passed 20/20 unit and integration tests across 5 test files), `npm run build` (compiled client bundle & PWA service worker with 0 errors).
+
+**Final status:**
+Accepted
+
+---
+
 # Final Disclosure
 
 To be completed in Phase 9 after reviewing this log:
@@ -189,9 +223,11 @@ AI-assisted components:
 - Dexie IndexedDB local-first storage engine & outbox mutation manager (client/src/db/index.ts, client/src/services/localDb.ts)
 - Safe queue coalescing engine enforcing rules 1-4 (client/src/services/localDb.ts)
 - Hybrid connectivity monitor with timeout handling (client/src/services/connectivity.ts)
+- Client push/pull sync engine & concurrency lock (client/src/services/syncEngine.ts)
+- Server REST sync API endpoints, SQLite opId idempotency & version conflict detection (server/services/syncService.ts, server/routes/syncRoutes.ts)
 - Google Stitch UI design visual alignment (client/src/components/*, client/src/index.css, client/src/App.tsx)
 - Express REST server & health endpoint with static client serving (server/app.ts, server/db.ts, server/index.ts)
-- Vitest outbox & local database unit test suites (client/src/__tests__/outbox.test.ts, client/src/__tests__/localDb.test.ts, server/__tests__/api.test.ts)
+- Vitest unit & integration test suites (client/src/__tests__/*, server/__tests__/*)
 - Deployment specification (render.yaml)
 
 External APIs:
