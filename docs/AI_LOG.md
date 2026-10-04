@@ -110,6 +110,39 @@ Accepted
 
 ---
 
+## 2026-10-04 — Phase 4: Outbox Operations, Connectivity Detection & Sync Status UI
+
+**AI tool:**
+Google Antigravity
+
+**Area:**
+Frontend / Database / Synchronization Architecture / Testing
+
+**What AI assisted with:**
+Implemented IndexedDB outbox queue mutation recording (`opId`, `recordId`, `type`, `payload`, `baseVersion`, `timestamp`, `status`) and safe outbox queue coalescing rules 1-4 (`create` -> `update`, `update` -> `update` preserving `baseVersion`, `update` -> `delete` preserving `baseVersion`, and `create` -> `delete` offline cancellation) in `client/src/services/localDb.ts`. Implemented hybrid connectivity monitor (`client/src/services/connectivity.ts`) combining `navigator.onLine` window events and non-aggressive `/api/health` pings with 4s timeout handling. Created Header status indicators, `Pending (N)` outbox counter badge, disabled `Sync Now (Phase 5)` placeholder button, and interactive `OutboxInspectorModal.tsx` queue visualizer. Added Vitest outbox unit test suite in `client/src/__tests__/outbox.test.ts`.
+
+**Files affected:**
+
+* `client/src/types/index.ts`
+* `client/src/services/localDb.ts`
+* `client/src/services/connectivity.ts`
+* `client/src/components/Header.tsx`
+* `client/src/components/OutboxInspectorModal.tsx`
+* `client/src/App.tsx`
+* `client/src/__tests__/outbox.test.ts`
+* `docs/AI_LOG.md`
+
+**Human review:**
+Reviewed outbox coalescing logic to ensure `opId` uniqueness, original `baseVersion` preservation during unsynced edits, and verified that un-synced offline creation followed by deletion removes local records and cancels outbox operations cleanly without server requests.
+
+**Verification:**
+Executed `npm test` (passed 12/12 tests across client and server test suites), `npm run build` (0 build errors), started Express production server, and verified outbox queue visualizer, coalescing, and status UI badges in browser via subagent.
+
+**Final status:**
+Accepted
+
+---
+
 # Final Disclosure
 
 To be completed in Phase 9 after reviewing this log:
@@ -117,10 +150,12 @@ To be completed in Phase 9 after reviewing this log:
 ```text
 AI-assisted components:
 - Full-stack project structure & build orchestration (package.json, client/vite.config.ts, server/tsconfig.json)
-- Dexie IndexedDB local-first storage engine & tombstone manager (client/src/db/index.ts, client/src/services/localDb.ts)
-- React UI subscribing exclusively to Dexie live queries (client/src/App.tsx, client/src/components/*)
+- Dexie IndexedDB local-first storage engine & outbox mutation manager (client/src/db/index.ts, client/src/services/localDb.ts)
+- Safe queue coalescing engine enforcing rules 1-4 (client/src/services/localDb.ts)
+- Hybrid connectivity monitor with timeout handling (client/src/services/connectivity.ts)
+- React UI subscribing exclusively to Dexie live queries, status badges & Outbox Inspector (client/src/App.tsx, client/src/components/*)
 - Express REST server & health endpoint with static client serving (server/app.ts, server/db.ts, server/index.ts)
-- Vitest unit & integration test suites (client/src/__tests__/localDb.test.ts, server/__tests__/api.test.ts)
+- Vitest outbox & local database unit test suites (client/src/__tests__/outbox.test.ts, client/src/__tests__/localDb.test.ts, server/__tests__/api.test.ts)
 - Deployment specification (render.yaml)
 
 External APIs:

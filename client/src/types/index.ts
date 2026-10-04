@@ -23,9 +23,11 @@ export interface LocalRecord {
 
 export type OperationType = 'create' | 'update' | 'delete';
 
+export type OutboxStatus = 'pending' | 'syncing' | 'error' | 'conflict';
+
 export interface OutboxOperation {
-  opId: string; // UUID
-  recordId: string; // UUID
+  opId: string; // Client-generated UUID for idempotency
+  recordId: string; // Associated record ID (UUID)
   type: OperationType;
   payload: {
     id: string;
@@ -36,8 +38,8 @@ export interface OutboxOperation {
     deleted: boolean;
   };
   baseVersion: number;
-  timestamp: string; // ISO string
-  status: 'pending' | 'processing' | 'failed';
+  timestamp: string; // ISO 8601 string
+  status: OutboxStatus;
   retryCount: number;
   lastError?: string;
 }
@@ -45,4 +47,19 @@ export interface OutboxOperation {
 export interface SyncMeta {
   key: string;
   value: string;
+}
+
+export interface ConnectivityState {
+  isBrowserOnline: boolean;
+  isServerReachable: boolean;
+  isFullyConnected: boolean;
+  statusText: 'Online' | 'Offline' | 'Server Unreachable';
+  lastCheckedAt: string | null;
+}
+
+export interface SyncStatusSummary {
+  status: 'idle' | 'syncing' | 'synced' | 'error';
+  pendingCount: number;
+  conflictCount: number;
+  lastSyncedAt: string | null;
 }

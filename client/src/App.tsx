@@ -6,8 +6,9 @@ import { createRecord, updateRecord, deleteRecord, restoreRecord } from './servi
 import { Header } from './components/Header.js';
 import { ItemCard } from './components/ItemCard.js';
 import { ItemEditorModal } from './components/ItemEditorModal.js';
+import { OutboxInspectorModal } from './components/OutboxInspectorModal.js';
 import { EmptyState } from './components/EmptyState.js';
-import { Plus, Search, FileText, CheckSquare, Trash2, Folder } from 'lucide-react';
+import { Plus, Search, FileText, CheckSquare, Trash2, Folder, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'notes' | 'tasks' | 'trash'>('all');
@@ -15,11 +16,13 @@ export const App: React.FC = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorType, setEditorType] = useState<ItemType>('note');
   const [editingItem, setEditingItem] = useState<LocalRecord | null>(null);
+  const [isOutboxModalOpen, setIsOutboxModalOpen] = useState(false);
 
-  // Read application state EXCLUSIVELY from IndexedDB via Dexie live query
+  // Live queries from Dexie IndexedDB
   const allRecords = useLiveQuery(() => db.records.toArray(), []) || [];
+  const pendingOutboxCount = useLiveQuery(() => db.outbox.count(), []) || 0;
 
-  // Filter records based on tab and search
+  // Filter records based on active tab and search query
   const filteredRecords = allRecords.filter((rec) => {
     const q = searchQuery.toLowerCase();
     const matchesSearch = !q || rec.title.toLowerCase().includes(q) || rec.content.toLowerCase().includes(q);
@@ -75,7 +78,10 @@ export const App: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-dark)' }}>
       {/* App Header */}
-      <Header totalRecordsCount={allRecords.length} />
+      <Header
+        pendingOutboxCount={pendingOutboxCount}
+        onOpenOutboxInspector={() => setIsOutboxModalOpen(true)}
+      />
 
       {/* Main Container */}
       <div style={{
@@ -254,6 +260,12 @@ export const App: React.FC = () => {
         editingItem={editingItem}
         onClose={() => setIsEditorOpen(false)}
         onSave={handleSaveItem}
+      />
+
+      {/* Outbox Inspector Modal */}
+      <OutboxInspectorModal
+        isOpen={isOutboxModalOpen}
+        onClose={() => setIsOutboxModalOpen(false)}
       />
     </div>
   );

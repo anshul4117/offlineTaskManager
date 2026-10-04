@@ -1,49 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Wifi, WifiOff, Server, HardDrive } from 'lucide-react';
+import { connectivityMonitor } from '../services/connectivity.js';
+import type { ConnectivityState } from '../types/index.js';
+import { Wifi, WifiOff, Server, RefreshCw, Layers } from 'lucide-react';
 
 interface HeaderProps {
-  totalRecordsCount: number;
+  pendingOutboxCount: number;
+  onOpenOutboxInspector: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ totalRecordsCount }) => {
-  const [isOnline, setIsOnline] = useState<boolean>(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
-  const [isServerReachable, setIsServerReachable] = useState<boolean>(false);
-
-  const checkHealth = async () => {
-    if (!navigator.onLine) {
-      setIsServerReachable(false);
-      return;
-    }
-    try {
-      const res = await fetch('/api/health');
-      setIsServerReachable(res.ok);
-    } catch {
-      setIsServerReachable(false);
-    }
-  };
+export const Header: React.FC<HeaderProps> = ({
+  pendingOutboxCount,
+  onOpenOutboxInspector
+}) => {
+  const [connState, setConnState] = useState<ConnectivityState>(connectivityMonitor.getState());
 
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      checkHealth();
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-      setIsServerReachable(false);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    checkHealth();
-    const interval = setInterval(checkHealth, 10000);
-
+    connectivityMonitor.start(10000);
+    const unsubscribe = connectivityMonitor.subscribe(setConnState);
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      clearInterval(interval);
+      unsubscribe();
     };
   }, []);
 
@@ -59,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ totalRecordsCount }) => {
       top: 0,
       zIndex: 100
     }}>
+      {/* Title / Branding */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div style={{
           width: '36px',
@@ -79,13 +55,14 @@ export const Header: React.FC<HeaderProps> = ({ totalRecordsCount }) => {
             Offline-First Notes & Tasks
           </h1>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            Dexie IndexedDB Engine (Local Source of Truth)
+            IndexedDB Outbox Queue + Reachability Monitor
           </p>
         </div>
       </div>
 
+      {/* Connectivity & Outbox Badges */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* IndexedDB Status */}
+        {/* Browser Network Badge */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -94,15 +71,15 @@ export const Header: React.FC<HeaderProps> = ({ totalRecordsCount }) => {
           borderRadius: '20px',
           fontSize: '12px',
           fontWeight: 600,
-          backgroundColor: 'rgba(59, 130, 246, 0.15)',
-          color: 'var(--accent-primary)',
-          border: '1px solid rgba(59, 130, 246, 0.3)'
+          backgroundColor: connState.isBrowserOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+          color: connState.isBrowserOnline ? 'var(--accent-success)' : 'var(--accent-danger)',
+          border: `1px solid ${connState.isBrowserOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
         }}>
-          <HardDrive size={14} />
-          <span>IndexedDB ({totalRecordsCount} records)</span>
+          {connState.isBrowserOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
+          <span>{connState.isBrowserOnline ? 'Browser Online' : 'Browser Offline'}</span>
         </div>
 
-        {/* Network Badge */}
+        {/* Backend Server Reachability */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -111,30 +88,67 @@ export const Header: React.FC<HeaderProps> = ({ totalRecordsCount }) => {
           borderRadius: '20px',
           fontSize: '12px',
           fontWeight: 600,
-          backgroundColor: isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-          color: isOnline ? 'var(--accent-success)' : 'var(--accent-danger)',
-          border: `1px solid ${isOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-        }}>
-          {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
-          <span>{isOnline ? 'Online' : 'Offline Mode'}</span>
-        </div>
-
-        {/* Server Reachability */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 12px',
-          borderRadius: '20px',
-          fontSize: '12px',
-          fontWeight: 600,
-          backgroundColor: isServerReachable ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-          color: isServerReachable ? 'var(--accent-success)' : 'var(--accent-warning)',
-          border: `1px solid ${isServerReachable ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+          backgroundColor: connState.isServerReachable ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+          color: connState.isServerReachable ? 'var(--accent-primary)' : 'var(--accent-warning)',
+          border: `1px solid ${connState.isServerReachable ? 'rgba(59, 130, 246, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
         }}>
           <Server size={14} />
-          <span>{isServerReachable ? 'Server Live' : 'Server Unreachable'}</span>
+          <span>{connState.isServerReachable ? 'Server Connected' : 'Server Unreachable'}</span>
         </div>
+
+        {/* Outbox Inspector Toggle Button */}
+        <button
+          onClick={onOpenOutboxInspector}
+          title="Inspect IndexedDB Outbox Queue"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 12px',
+            borderRadius: '10px',
+            backgroundColor: 'var(--bg-card-hover)',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border-color)',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          <Layers size={15} />
+          <span>Outbox</span>
+          <span style={{
+            backgroundColor: pendingOutboxCount > 0 ? 'var(--accent-warning)' : 'var(--bg-dark)',
+            color: pendingOutboxCount > 0 ? '#000000' : 'var(--text-muted)',
+            fontSize: '11px',
+            fontWeight: 700,
+            padding: '2px 7px',
+            borderRadius: '10px'
+          }}>
+            {pendingOutboxCount}
+          </span>
+        </button>
+
+        {/* Sync Now Placeholder Button (Phase 5 Boundary) */}
+        <button
+          disabled={true}
+          title="Sync Engine will be enabled in Phase 5"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '10px',
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            color: 'rgba(241, 245, 249, 0.6)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'not-allowed'
+          }}
+        >
+          <RefreshCw size={14} />
+          <span>Sync Now (Phase 5)</span>
+        </button>
       </div>
     </header>
   );
