@@ -24,6 +24,7 @@ export const App: React.FC = () => {
   const [isOutboxModalOpen, setIsOutboxModalOpen] = useState(false);
   const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,6 +39,25 @@ export const App: React.FC = () => {
   // Seed initial demo dataset on startup if DB is empty
   useEffect(() => {
     seedDemoData().catch((err) => console.error('[seedDemoData] Error:', err));
+  }, []);
+
+  // Parse URL search parameters on initial load for tab/note selection persistence
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlTab = params.get('tab');
+    if (urlTab && ['all', 'notes', 'tasks', 'pending', 'conflicts', 'trash'].includes(urlTab)) {
+      setActiveTab(urlTab as any);
+    }
+    const urlNoteId = params.get('note');
+    if (urlNoteId) {
+      db.records.get(urlNoteId).then((rec) => {
+        if (rec) {
+          setEditingItem(rec);
+          setEditorType(rec.type);
+          setIsEditorOpen(true);
+        }
+      });
+    }
   }, []);
 
   // Cmd+K / Ctrl+K keyboard shortcut listener for search bar focus
@@ -55,6 +75,40 @@ export const App: React.FC = () => {
   // Read application state EXCLUSIVELY from Dexie IndexedDB
   const allRecords = useLiveQuery(() => db.records.toArray(), []) || [];
   const pendingOutboxCount = useLiveQuery(() => db.outbox.count(), []) || 0;
+
+  const handleSelectTab = (tab: any) => {
+    setActiveTab(tab);
+    setIsMobileMenuOpen(false);
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', tab);
+    params.delete('note');
+    const newSearch = '?' + params.toString();
+    window.history.replaceState(null, '', newSearch);
+  };
+
+  const handleCreateNew = (type: ItemType) => {
+    setEditingItem(null);
+    setEditorType(type);
+    setIsEditorOpen(true);
+  };
+
+  const handleEdit = (item: LocalRecord) => {
+    setEditingItem(item);
+    setEditorType(item.type);
+    setIsEditorOpen(true);
+    const params = new URLSearchParams(window.location.search);
+    params.set('note', item.id);
+    window.history.replaceState(null, '', '?' + params.toString());
+  };
+
+  const handleCloseEditor = () => {
+    setIsEditorOpen(false);
+    setEditingItem(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete('note');
+    const newSearch = params.toString() ? '?' + params.toString() : window.location.pathname;
+    window.history.replaceState(null, '', newSearch);
+  };
 
   // Filter records based on active tab and search query
   const filteredRecords = allRecords.filter((rec) => {
@@ -86,24 +140,13 @@ export const App: React.FC = () => {
   const syncedCount = activeRecords.filter((r) => !r.pending && !r.conflict).length;
   const trashCount = allRecords.filter((r) => r.deleted).length;
 
-  const handleCreateNew = (type: ItemType) => {
-    setEditingItem(null);
-    setEditorType(type);
-    setIsEditorOpen(true);
-  };
-
-  const handleEdit = (item: LocalRecord) => {
-    setEditingItem(item);
-    setEditorType(item.type);
-    setIsEditorOpen(true);
-  };
-
   const handleSaveItem = async (title: string, content: string, type: ItemType, id?: string) => {
     if (id) {
       await updateRecord(id, title, content, type);
     } else {
       await createRecord(title, content, type);
     }
+    handleCloseEditor();
   };
 
   const handleDeleteItem = async (id: string) => {
@@ -119,13 +162,15 @@ export const App: React.FC = () => {
       {/* Left Sidebar */}
       <Sidebar
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={handleSelectTab}
         activeCount={activeRecords.length}
         pendingCount={pendingCount}
         conflictCount={conflictCount}
         trashCount={trashCount}
         isSimulatedOffline={isSimulatedOffline}
         onToggleSimulatedOffline={() => setIsSimulatedOffline(!isSimulatedOffline)}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Center Notes Explorer */}
@@ -136,6 +181,7 @@ export const App: React.FC = () => {
           conflictCount={conflictCount}
           onOpenOutboxInspector={() => setIsOutboxModalOpen(true)}
           isSimulatedOffline={isSimulatedOffline}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
 
         {/* Heading & New Note Action Row */}
@@ -375,7 +421,7 @@ export const App: React.FC = () => {
         isOpen={isEditorOpen}
         initialType={editorType}
         editingItem={editingItem}
-        onClose={() => setIsEditorOpen(false)}
+        onClose={handleCloseEditor}
         onSave={handleSaveItem}
       />
 

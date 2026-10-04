@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, FileText, Clock, AlertTriangle, Trash2, Settings, HardDrive } from 'lucide-react';
+import { Home, FileText, Clock, AlertTriangle, Trash2, Settings, HardDrive, X } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,6 +10,8 @@ interface SidebarProps {
   trashCount: number;
   isSimulatedOffline: boolean;
   onToggleSimulatedOffline: () => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -20,47 +22,94 @@ export const Sidebar: React.FC<SidebarProps> = ({
   conflictCount,
   trashCount,
   isSimulatedOffline,
-  onToggleSimulatedOffline
+  onToggleSimulatedOffline,
+  isMobileOpen = false,
+  onCloseMobile
 }) => {
+  const handleTabClick = (id: string) => {
+    onSelectTab(id);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   return (
-    <aside className="sidebar-aside" style={{
-      width: '240px',
-      backgroundColor: 'var(--bg-sidebar)',
-      borderRight: '1px solid var(--border-color)',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      padding: '20px 16px',
-      minHeight: '100vh',
-      flexShrink: 0
-    }}>
-      {/* Top Branding & Navigation */}
-      <div>
-        {/* App Branding */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px', paddingLeft: '8px' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--text-primary)',
-            color: 'var(--accent-lime)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '16px'
-          }}>
-            ≡
+    <>
+      {/* Mobile Semi-Transparent Backdrop Overlay */}
+      {isMobileOpen && (
+        <div
+          onClick={onCloseMobile}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 199
+          }}
+        />
+      )}
+
+      <aside
+        className={`sidebar-aside ${isMobileOpen ? 'is-mobile-open' : ''}`}
+        style={{
+          width: '240px',
+          backgroundColor: 'var(--bg-sidebar)',
+          borderRight: '1px solid var(--border-color)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '20px 16px',
+          minHeight: '100vh',
+          flexShrink: 0
+        }}
+      >
+        {/* Top Branding & Navigation */}
+        <div>
+          {/* App Branding & Mobile Close Button */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', paddingLeft: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--text-primary)',
+                color: 'var(--accent-lime)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '16px'
+              }}>
+                ≡
+              </div>
+              <div>
+                <h1 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: '1.2' }}>
+                  SyncNote
+                </h1>
+                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                  v2.4.0-offline
+                </span>
+              </div>
+            </div>
+
+            {onCloseMobile && (
+              <button
+                onClick={onCloseMobile}
+                className="mobile-close-btn"
+                title="Close Navigation"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-secondary)',
+                  padding: '4px'
+                }}
+              >
+                <X size={20} />
+              </button>
+            )}
           </div>
-          <div>
-            <h1 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: '1.2' }}>
-              SyncNote
-            </h1>
-            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-              v2.4.0-offline
-            </span>
-          </div>
-        </div>
 
         {/* Nav Items */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -76,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => onSelectTab(item.id === 'all-notes' ? 'all' : item.id)}
+                onClick={() => handleTabClick(item.id === 'all-notes' ? 'all' : item.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -195,5 +244,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </aside>
+    </>
   );
 };

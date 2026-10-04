@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { connectivityMonitor } from '../services/connectivity.js';
 import type { ConnectivityState } from '../types/index.js';
-import { Wifi, WifiOff, Server, Layers, RefreshCw, User } from 'lucide-react';
+import { Wifi, WifiOff, Server, Layers, RefreshCw, User, Menu } from 'lucide-react';
 
 interface HeaderProps {
   pendingOutboxCount: number;
   conflictCount: number;
   onOpenOutboxInspector: () => void;
   isSimulatedOffline: boolean;
+  onOpenMobileMenu?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   pendingOutboxCount,
   conflictCount,
   onOpenOutboxInspector,
-  isSimulatedOffline
+  isSimulatedOffline,
+  onOpenMobileMenu
 }) => {
   const [connState, setConnState] = useState<ConnectivityState>(connectivityMonitor.getState());
 
@@ -56,8 +58,28 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Main Top Header Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {/* Breadcrumb Path */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Breadcrumb Path & Mobile Hamburger Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {onOpenMobileMenu && (
+            <button
+              onClick={onOpenMobileMenu}
+              className="mobile-hamburger-btn"
+              title="Open Navigation Menu"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: 'var(--bg-sidebar)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)'
+              }}
+            >
+              <Menu size={18} />
+            </button>
+          )}
+
           <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Workspace /</span>
           <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Your Notes</span>
 

@@ -99,9 +99,43 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
           padding: '20px 24px',
           borderBottom: '1px solid var(--border-color)'
         }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {editingItem ? 'Edit Record' : `New ${type === 'note' ? 'Note' : 'Task'}`}
-          </h2>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {editingItem ? 'Note Details & Editor' : `New ${type === 'note' ? 'Note' : 'Task'}`}
+              </h2>
+              {editingItem && (
+                <span style={{
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  backgroundColor: editingItem.conflict
+                    ? 'var(--accent-red-bg)'
+                    : editingItem.pending
+                    ? 'var(--accent-purple-bg)'
+                    : 'var(--accent-green-bg)',
+                  color: editingItem.conflict
+                    ? 'var(--accent-red-text)'
+                    : editingItem.pending
+                    ? 'var(--accent-purple-text)'
+                    : 'var(--accent-green-text)'
+                }}>
+                  {editingItem.conflict
+                    ? 'Branch Conflict'
+                    : editingItem.pending
+                    ? 'Pending Sync'
+                    : `Synced (v${editingItem.version})`}
+                </span>
+              )}
+            </div>
+            {editingItem && (
+              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                Updated: {new Date(editingItem.updatedAt).toLocaleTimeString()} • #{editingItem.id.slice(0, 8)}
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
             style={{ backgroundColor: 'transparent', color: 'var(--text-muted)' }}
