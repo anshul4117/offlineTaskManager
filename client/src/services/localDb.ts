@@ -489,3 +489,31 @@ export async function seedDemoData(): Promise<void> {
     });
   });
 }
+
+/**
+ * Permanently deletes selected tombstoned records from Dexie IndexedDB
+ * and removes any pending outbox operations for them.
+ */
+export async function permanentlyDeleteRecords(ids: string[]): Promise<void> {
+  if (!ids || ids.length === 0) return;
+
+  await db.transaction('rw', [db.records, db.outbox], async () => {
+    for (const id of ids) {
+      const ops = await db.outbox.where('recordId').equals(id).toArray();
+      for (const op of ops) {
+        await db.outbox.delete(op.opId);
+      }
+      await db.records.delete(id);
+    }
+  });
+}
+
+/**
+ * Permanently purges all tombstoned records from Dexie IndexedDB
+ * and cleans up their associated outbox operations.
+ */
+export async function clearAllTrash(): Promise<void> {
+  const trashed = await db.records.filter((r) => r.deleted).toArray();
+  const trashedIds = trashed.map((r) => r.id);
+  await permanentlyDeleteRecords(trashedIds);
+}

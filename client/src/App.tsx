@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db/index.js';
 import type { LocalRecord, ItemType } from './types/index.js';
-import { createRecord, updateRecord, deleteRecord, restoreRecord, resolveConflict, seedDemoData } from './services/localDb.js';
+import { createRecord, updateRecord, deleteRecord, restoreRecord, resolveConflict, seedDemoData, permanentlyDeleteRecords, clearAllTrash } from './services/localDb.js';
 import { syncEngine } from './services/syncEngine.js';
 import { Sidebar } from './components/Sidebar.js';
 import { Header } from './components/Header.js';
@@ -11,10 +11,11 @@ import { ItemCard } from './components/ItemCard.js';
 import { ItemEditorModal } from './components/ItemEditorModal.js';
 import { ItemDetailModal } from './components/ItemDetailModal.js';
 import { DeleteConfirmationModal } from './components/DeleteConfirmationModal.js';
+import { BulkDeleteConfirmationModal } from './components/BulkDeleteConfirmationModal.js';
 import { OutboxInspectorModal } from './components/OutboxInspectorModal.js';
 import { ConflictResolverModal } from './components/ConflictResolverModal.js';
 import { EmptyState } from './components/EmptyState.js';
-import { Plus, Search, SlidersHorizontal, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, AlertTriangle, Clock, CheckCircle2, Trash2, CheckSquare, Square } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'notes' | 'tasks' | 'pending' | 'conflicts' | 'trash'>('all');
@@ -26,6 +27,8 @@ export const App: React.FC = () => {
   const [editingItem, setEditingItem] = useState<LocalRecord | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingItem, setDeletingItem] = useState<LocalRecord | null>(null);
+  const [selectedTrashIds, setSelectedTrashIds] = useState<string[]>([]);
+  const [bulkDeleteMode, setBulkDeleteMode] = useState<'selected' | 'clear_all' | null>(null);
   const [conflictItem, setConflictItem] = useState<LocalRecord | null>(null);
   const [isOutboxModalOpen, setIsOutboxModalOpen] = useState(false);
   const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
@@ -135,11 +138,37 @@ export const App: React.FC = () => {
   const handleSelectTab = (tab: any) => {
     setActiveTab(tab);
     setIsMobileMenuOpen(false);
+    setSelectedTrashIds([]);
     const params = new URLSearchParams(window.location.search);
     params.set('tab', tab);
     params.delete('note');
     const newSearch = '?' + params.toString();
     window.history.pushState(null, '', newSearch);
+  };
+
+  const handleToggleSelectTrash = (id: string) => {
+    setSelectedTrashIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllTrash = (trashedRecords: LocalRecord[]) => {
+    setSelectedTrashIds(trashedRecords.map((r) => r.id));
+  };
+
+  const handleDeselectAllTrash = () => {
+    setSelectedTrashIds([]);
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (bulkDeleteMode === 'selected') {
+      await permanentlyDeleteRecords(selectedTrashIds);
+      setSelectedTrashIds([]);
+    } else if (bulkDeleteMode === 'clear_all') {
+      await clearAllTrash();
+      setSelectedTrashIds([]);
+    }
+    setBulkDeleteMode(null);
   };
 
   const handleCreateNew = (type: ItemType) => {
@@ -473,6 +502,97 @@ export const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Trash Management Action Toolbar (Visible when Trash tab active) */}
+        {activeTab === 'trash' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 18px',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: '#ffffff',
+            border: '1px solid var(--border-color)',
+            marginBottom: '20px',
+            boxShadow: 'var(--shadow-subtle)',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {selectedTrashIds.length > 0 ? `${selectedTrashIds.length} item${selectedTrashIds.length === 1 ? '' : 's'} selected` : 'Trash Management'}
+              </span>
+
+              {filteredRecords.length > 0 && (
+                <button
+                  onClick={selectedTrashIds.length === filteredRecords.length ? handleDeselectAllTrash : () => handleSelectAllTrash(filteredRecords)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'var(--bg-light)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {selectedTrashIds.length === filteredRecords.length ? <CheckSquare size={14} /> : <Square size={14} />}
+                  <span>{selectedTrashIds.length === filteredRecords.length ? 'Deselect All' : 'Select All'}</span>
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {selectedTrashIds.length > 0 && (
+                <button
+                  onClick={() => setBulkDeleteMode('selected')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--accent-red-bg)',
+                    color: 'var(--accent-red-text)',
+                    border: '1px solid var(--accent-red-border)',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Trash2 size={14} />
+                  <span>Delete Selected ({selectedTrashIds.length})</span>
+                </button>
+              )}
+
+              {trashCount > 0 && (
+                <button
+                  onClick={() => setBulkDeleteMode('clear_all')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: '#ffffff',
+                    color: 'var(--accent-red-text)',
+                    border: '1px solid var(--accent-red-border)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Trash2 size={14} />
+                  <span>Clear All Trash</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Content Items Grid */}
         {filteredRecords.length === 0 ? (
           <EmptyState
@@ -514,6 +634,8 @@ export const App: React.FC = () => {
                 onDelete={handleRequestDelete}
                 onRestore={handleRestoreItem}
                 onResolveConflict={(rec) => setConflictItem(rec)}
+                isSelected={selectedTrashIds.includes(item.id)}
+                onToggleSelect={activeTab === 'trash' ? handleToggleSelectTrash : undefined}
               />
             ))}
           </div>
@@ -550,6 +672,15 @@ export const App: React.FC = () => {
         onConfirmDelete={handleConfirmDelete}
       />
 
+      {/* Bulk Delete / Clear All Trash Confirmation Modal */}
+      <BulkDeleteConfirmationModal
+        isOpen={bulkDeleteMode !== null}
+        mode={bulkDeleteMode || 'selected'}
+        count={bulkDeleteMode === 'clear_all' ? trashCount : selectedTrashIds.length}
+        onClose={() => setBulkDeleteMode(null)}
+        onConfirm={handleConfirmBulkDelete}
+      />
+
       {/* Outbox Inspector Modal */}
       <OutboxInspectorModal
         isOpen={isOutboxModalOpen}
@@ -564,6 +695,38 @@ export const App: React.FC = () => {
         onResolveKeepServer={async (id) => { await resolveConflict(id, 'keep_server'); }}
         onResolveMerge={async (id, title, content) => { await resolveConflict(id, 'merge', { title, content }); }}
       />
+
+      {/* Persistent Floating Action Button (FAB) */}
+      <button
+        onClick={() => {
+          const typeToCreate = activeTab === 'tasks' ? 'task' : 'note';
+          handleCreateNew(typeToCreate);
+        }}
+        title={activeTab === 'tasks' ? 'Create New Task' : 'Create New Note'}
+        style={{
+          position: 'fixed',
+          bottom: '28px',
+          right: '28px',
+          zIndex: 90,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          padding: '14px 22px',
+          borderRadius: '30px',
+          backgroundColor: 'var(--accent-lime)',
+          color: 'var(--accent-lime-text)',
+          border: 'none',
+          fontWeight: 800,
+          fontSize: '14px',
+          boxShadow: '0 8px 20px rgba(210, 242, 74, 0.45), 0 4px 10px rgba(0, 0, 0, 0.15)',
+          cursor: 'pointer',
+          transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+        }}
+      >
+        <Plus size={22} />
+        <span>{activeTab === 'tasks' ? 'New Task' : 'New Note'}</span>
+      </button>
     </div>
   );
 };

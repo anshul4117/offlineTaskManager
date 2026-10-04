@@ -9,6 +9,8 @@ interface ItemCardProps {
   onDelete: (item: LocalRecord) => void;
   onRestore?: (id: string) => void;
   onResolveConflict?: (item: LocalRecord) => void;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({
@@ -17,7 +19,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   onEdit,
   onDelete,
   onRestore,
-  onResolveConflict
+  onResolveConflict,
+  isSelected,
+  onToggleSelect
 }) => {
   const formattedDate = new Date(item.updatedAt).toLocaleTimeString([], {
     hour: '2-digit',
@@ -32,9 +36,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
     <div
       onClick={() => onView(item)}
       style={{
-        backgroundColor: 'var(--bg-card)',
+        backgroundColor: isSelected ? '#f7fee7' : 'var(--bg-card)',
         borderRadius: 'var(--radius-lg)',
-        border: item.conflict
+        border: isSelected
+          ? '2px solid var(--accent-lime-text)'
+          : item.conflict
           ? '1px solid var(--accent-red-border)'
           : item.pending
           ? '1px solid #d8b4fe'
@@ -45,7 +51,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         justifyContent: 'space-between',
         position: 'relative',
         boxShadow: 'var(--shadow-subtle)',
-        opacity: item.deleted ? 0.6 : 1,
+        opacity: item.deleted ? 0.7 : 1,
         cursor: 'pointer',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
       }}
@@ -53,7 +59,24 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       <div>
         {/* Card Top Header Pill Row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onToggleSelect && (
+              <input
+                type="checkbox"
+                checked={isSelected || false}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onToggleSelect(item.id);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  cursor: 'pointer',
+                  accentColor: 'var(--accent-lime-text)'
+                }}
+              />
+            )}
             {item.conflict ? (
               <span style={{
                 display: 'inline-flex',
