@@ -296,6 +296,100 @@ export async function getActiveRecords(): Promise<LocalRecord[]> {
 }
 
 /**
+ * Resolves a version conflict on a local record.
+ */
+export async function resolveConflict(
+  id: string,
+  resolution: 'keep_local' | 'keep_server' | 'merge',
+  mergedContent?: { title: string; content: string }
+): Promise<void> {
+  const record = await db.records.get(id);
+  if (!record || !record.serverRecord) {
+    if (record) {
+      await db.records.update(id, { conflict: false, serverRecord: undefined });
+    }
+    return;
+  }
+
+  const serverSnap = record.serverRecord;
+  const now = new Date().toISOString();
+
+  await db.transaction('rw', [db.records, db.outbox], async () => {
+    if (resolution === 'keep_server') {
+      const pendingOps = await db.outbox.where('recordId').equals(id).toArray();
+      for (const op of pendingOps) {
+        await db.outbox.delete(op.opId);
+      }
+      await db.records.put({
+        id: serverSnap.id,
+        title: serverSnap.title,
+        content: serverSnap.content,
+        type: serverSnap.type,
+        version: serverSnap.version,
+        updatedAt: serverSnap.updatedAt,
+        deleted: serverSnap.deleted,
+        pending: false,
+        conflict: false,
+        serverRecord: undefined
+      });
+    } else if (resolution === 'keep_local') {
+      const opId = crypto.randomUUID();
+      const outboxOp: OutboxOperation = {
+        opId,
+        recordId: id,
+        type: 'update',
+        payload: {
+          id,
+          title: record.title,
+          content: record.content,
+          type: record.type,
+          updatedAt: now,
+          deleted: record.deleted
+        },
+        baseVersion: serverSnap.version,
+        timestamp: now,
+        status: 'pending',
+        retryCount: 0
+      };
+      await db.records.update(id, { pending: true, conflict: false, serverRecord: undefined, updatedAt: now });
+      await db.outbox.put(outboxOp);
+    } else if (resolution === 'merge' && mergedContent) {
+      const opId = crypto.randomUUID();
+      const outboxOp: OutboxOperation = {
+        opId,
+        recordId: id,
+        type: 'update',
+        payload: {
+          id,
+          title: mergedContent.title,
+          content: mergedContent.content,
+          type: record.type,
+          updatedAt: now,
+          deleted: false
+        },
+        baseVersion: serverSnap.version,
+        timestamp: now,
+        status: 'pending',
+        retryCount: 0
+      };
+      await db.records.put({
+        id,
+        title: mergedContent.title,
+        content: mergedContent.content,
+        type: record.type,
+        version: serverSnap.version,
+        updatedAt: now,
+        deleted: false,
+        pending: true,
+        conflict: false,
+        serverRecord: undefined
+      });
+      await db.outbox.put(outboxOp);
+    }
+  });
+}
+
+/**
  * Gets all outbox operations ordered by timestamp.
  */
 export async function getOutboxOperations(): Promise<OutboxOperation[]> {

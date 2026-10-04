@@ -20,8 +20,8 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.75)',
-      backdropFilter: 'blur(5px)',
+      backgroundColor: 'rgba(24, 28, 34, 0.7)',
+      backdropFilter: 'blur(4px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -30,31 +30,32 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
     }}>
       <div style={{
         backgroundColor: 'var(--bg-card)',
-        borderRadius: '16px',
+        borderRadius: 'var(--radius-lg)',
         border: '1px solid var(--border-color)',
         width: '100%',
-        maxWidth: '720px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
+        maxWidth: '740px',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
         maxHeight: '80vh',
         display: 'flex',
         flexDirection: 'column'
       }}>
-        {/* Modal Header */}
+        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '20px 24px',
+          backgroundColor: 'var(--bg-light)',
           borderBottom: '1px solid var(--border-color)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Layers size={22} color="var(--accent-primary)" />
+            <Layers size={22} color="var(--accent-lime-text)" />
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
                 IndexedDB Outbox Operations Queue
               </h2>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Phase 4 — Live Outbox Mutation Operations Queue
+                Live outbox mutation operations & coalescing inspector
               </p>
             </div>
           </div>
@@ -63,14 +64,14 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
           </button>
         </div>
 
-        {/* Modal Body */}
+        {/* Content */}
         <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
           {!outboxOps || outboxOps.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-              <CheckCircle2 size={40} color="var(--accent-success)" style={{ marginBottom: '12px' }} />
-              <p style={{ fontSize: '15px', fontWeight: 600 }}>Outbox Queue is empty</p>
+              <CheckCircle2 size={40} color="var(--accent-green-text)" style={{ marginBottom: '12px' }} />
+              <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Outbox Queue is Empty</p>
               <p style={{ fontSize: '13px', marginTop: '4px' }}>
-                Create, edit, or delete notes to generate queued outbox operations.
+                All local mutations have coalesced or been synchronized.
               </p>
             </div>
           ) : (
@@ -78,15 +79,15 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
               <div style={{
                 padding: '10px 14px',
                 borderRadius: '8px',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                color: 'var(--accent-primary)',
+                backgroundColor: 'var(--bg-light)',
+                color: 'var(--text-secondary)',
                 fontSize: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                marginBottom: '8px'
+                border: '1px solid var(--border-color)'
               }}>
-                <Info size={16} />
+                <Info size={16} color="var(--accent-purple-text)" />
                 <span>
                   Showing {outboxOps.length} queued mutation {outboxOps.length === 1 ? 'operation' : 'operations'}. Operations coalesce automatically.
                 </span>
@@ -96,7 +97,7 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
                 <div
                   key={op.opId}
                   style={{
-                    backgroundColor: 'var(--bg-dark)',
+                    backgroundColor: 'var(--bg-light)',
                     borderRadius: '10px',
                     padding: '14px 16px',
                     border: '1px solid var(--border-color)',
@@ -107,38 +108,37 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{
                         textTransform: 'uppercase',
-                        fontWeight: 700,
+                        fontWeight: 800,
                         fontSize: '11px',
                         padding: '2px 8px',
                         borderRadius: '4px',
                         backgroundColor: op.type === 'create'
-                          ? 'rgba(16, 185, 129, 0.2)'
+                          ? 'var(--accent-green-bg)'
                           : op.type === 'update'
-                          ? 'rgba(59, 130, 246, 0.2)'
-                          : 'rgba(239, 68, 68, 0.2)',
+                          ? 'var(--accent-purple-bg)'
+                          : 'var(--accent-red-bg)',
                         color: op.type === 'create'
-                          ? 'var(--accent-success)'
+                          ? 'var(--accent-green-text)'
                           : op.type === 'update'
-                          ? 'var(--accent-primary)'
-                          : 'var(--accent-danger)'
+                          ? 'var(--accent-purple-text)'
+                          : 'var(--accent-red-text)'
                       }}>
                         {op.type}
                       </span>
-                      <span style={{ fontFamily: 'monospace', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '12px' }}>
                         opId: {op.opId.slice(0, 8)}...
                       </span>
                     </div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={12} />
+                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
                       {new Date(op.timestamp).toLocaleTimeString()}
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', color: 'var(--text-secondary)', fontSize: '12px' }}>
-                    <div>Record ID: <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>{op.recordId.slice(0, 8)}...</span></div>
-                    <div>Base Version: <span style={{ fontWeight: 600, color: 'var(--accent-warning)' }}>v{op.baseVersion}</span></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', color: 'var(--text-secondary)', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
+                    <div>Record ID: <span style={{ color: 'var(--text-primary)' }}>{op.recordId.slice(0, 8)}...</span></div>
+                    <div>Base Version: <span style={{ fontWeight: 700, color: 'var(--accent-purple-text)' }}>v{op.baseVersion}</span></div>
                     <div>Title: <span style={{ color: 'var(--text-primary)' }}>{op.payload.title || '(Untitled)'}</span></div>
-                    <div>Status: <span style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--accent-warning)' }}>{op.status}</span></div>
+                    <div>Status: <span style={{ textTransform: 'capitalize', fontWeight: 700, color: 'var(--text-primary)' }}>{op.status}</span></div>
                   </div>
                 </div>
               ))}

@@ -1,92 +1,88 @@
 import React from 'react';
 import type { LocalRecord } from '../types/index.js';
-import { Edit2, Trash2, FileText, CheckSquare, RotateCcw, Clock } from 'lucide-react';
+import { Edit2, Trash2, RotateCcw, AlertTriangle, Clock, CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface ItemCardProps {
   item: LocalRecord;
   onEdit: (item: LocalRecord) => void;
   onDelete: (id: string) => void;
   onRestore?: (id: string) => void;
+  onResolveConflict?: (item: LocalRecord) => void;
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({
   item,
   onEdit,
   onDelete,
-  onRestore
+  onRestore,
+  onResolveConflict
 }) => {
-  const formattedDate = new Date(item.updatedAt).toLocaleString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const timeAgo = (isoString: string) => {
+    const diffMs = Date.now() - new Date(isoString).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins} min ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} hours ago`;
+    return new Date(isoString).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const payloadSizeKB = (Math.max(0.4, (item.content.length + item.title.length) / 1024)).toFixed(1);
+  const tagLabel = item.type === 'note' ? '#specs' : '#database';
 
   return (
-    <div
-      style={{
-        backgroundColor: 'var(--bg-card)',
-        borderRadius: '16px',
-        border: item.deleted
-          ? '1px dashed var(--accent-danger)'
-          : '1px solid var(--border-color)',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        position: 'relative',
-        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-        opacity: item.deleted ? 0.6 : 1,
-        transition: 'transform 0.15s ease, border-color 0.15s ease'
-      }}
-    >
+    <div style={{
+      backgroundColor: 'var(--bg-card)',
+      borderRadius: 'var(--radius-lg)',
+      border: item.conflict
+        ? '1px solid var(--accent-red-text)'
+        : item.pending
+        ? '1px solid #c084fc'
+        : '1px solid var(--border-color)',
+      padding: '20px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      boxShadow: 'var(--shadow-card)',
+      position: 'relative',
+      opacity: item.deleted ? 0.6 : 1,
+      transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+    }}>
       <div>
-        {/* Top Header Badges */}
+        {/* Top Header Row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {/* Type Badge */}
-            <span style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              padding: '4px 8px',
-              borderRadius: '6px',
-              backgroundColor: item.type === 'note' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(139, 92, 246, 0.15)',
-              color: item.type === 'note' ? 'var(--accent-primary)' : '#8b5cf6'
-            }}>
-              {item.type === 'note' ? <FileText size={12} /> : <CheckSquare size={12} />}
-              {item.type}
-            </span>
-
-            {/* Version Badge */}
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              padding: '4px 8px',
-              borderRadius: '6px',
-              backgroundColor: 'var(--bg-dark)',
-              color: 'var(--text-muted)',
-              border: '1px solid var(--border-color)'
-            }}>
-              v{item.version}
-            </span>
-          </div>
-
-          {/* Pending / Deleted Status Indicator */}
+          {/* Status Badge Pill */}
           <div>
-            {item.deleted ? (
+            {item.conflict ? (
               <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '3px 10px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--accent-red-bg)',
+                color: 'var(--accent-red-text)',
+                border: '1px solid var(--accent-red-text)'
+              }}>
+                <AlertTriangle size={12} />
+                Branch Conflict
+              </span>
+            ) : item.pending ? (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
                 fontSize: '11px',
                 fontWeight: 700,
-                padding: '4px 8px',
-                borderRadius: '6px',
-                backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                color: 'var(--accent-danger)'
+                padding: '3px 10px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--accent-purple-bg)',
+                color: 'var(--accent-purple-text)'
               }}>
-                Tombstone (Deleted)
+                <Clock size={12} />
+                Pending • Queued in Outbox
               </span>
             ) : (
               <span style={{
@@ -94,77 +90,123 @@ export const ItemCard: React.FC<ItemCardProps> = ({
                 alignItems: 'center',
                 gap: '4px',
                 fontSize: '11px',
-                fontWeight: 600,
-                padding: '4px 8px',
-                borderRadius: '6px',
-                backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                color: 'var(--accent-warning)'
+                fontWeight: 700,
+                padding: '3px 10px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--accent-green-bg)',
+                color: 'var(--accent-green-text)'
               }}>
-                <Clock size={12} />
-                IndexedDB Local
+                <CheckCircle2 size={12} />
+                Synced
               </span>
             )}
           </div>
+
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            {timeAgo(item.updatedAt)} • offline
+          </span>
         </div>
 
         {/* Title */}
         <h3 style={{
           fontSize: '16px',
-          fontWeight: 700,
+          fontWeight: 800,
           color: 'var(--text-primary)',
           marginBottom: '8px',
+          lineHeight: '1.3',
           textDecoration: item.deleted ? 'line-through' : 'none'
         }}>
           {item.title || '(Untitled)'}
         </h3>
 
-        {/* Content Body */}
+        {/* Content Snippet */}
         <p style={{
-          fontSize: '14px',
+          fontSize: '13px',
           color: 'var(--text-secondary)',
           lineHeight: '1.5',
           whiteSpace: 'pre-wrap',
           marginBottom: '16px',
-          maxHeight: '140px',
+          maxHeight: '80px',
           overflow: 'hidden',
           textOverflow: 'ellipsis'
         }}>
           {item.content}
         </p>
+
+        {/* Conflict Warning Box */}
+        {item.conflict && item.serverRecord && (
+          <div style={{
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-sm)',
+            backgroundColor: 'var(--accent-red-bg)',
+            color: 'var(--accent-red-text)',
+            fontSize: '12px',
+            fontWeight: 600,
+            marginBottom: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <span>Diverged from MacBook Pro (2 diffs)</span>
+            {onResolveConflict && (
+              <button
+                onClick={() => onResolveConflict(item)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  backgroundColor: 'var(--accent-red-text)',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '11px'
+                }}
+              >
+                Review
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Footer Meta & Actions */}
+      {/* Monospace Footer Row */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingTop: '12px',
         borderTop: '1px solid var(--border-color)',
-        marginTop: '8px'
+        marginTop: '8px',
+        fontSize: '11px',
+        fontFamily: 'var(--font-mono)',
+        color: 'var(--text-muted)'
       }}>
-        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          {formattedDate}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span>Payload: {payloadSizeKB} KB</span>
+          <span style={{
+            padding: '2px 6px',
+            borderRadius: '4px',
+            backgroundColor: 'var(--bg-light)',
+            color: 'var(--text-secondary)',
+            fontWeight: 700
+          }}>
+            {tagLabel}
+          </span>
+        </div>
 
+        {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {item.deleted ? (
             onRestore && (
               <button
                 onClick={() => onRestore(item.id)}
-                title="Restore Record from Tombstone"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                  color: 'var(--accent-success)',
-                  fontSize: '12px',
-                  fontWeight: 600
+                  color: 'var(--accent-green-text)',
+                  fontWeight: 800
                 }}
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={13} />
                 Restore
               </button>
             )
@@ -172,27 +214,17 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             <>
               <button
                 onClick={() => onEdit(item)}
-                title="Edit Record"
-                style={{
-                  padding: '6px',
-                  borderRadius: '6px',
-                  backgroundColor: 'transparent',
-                  color: 'var(--text-secondary)'
-                }}
+                title="Edit Note"
+                style={{ backgroundColor: 'transparent', color: 'var(--text-secondary)' }}
               >
-                <Edit2 size={16} />
+                <Edit2 size={15} />
               </button>
               <button
                 onClick={() => onDelete(item.id)}
-                title="Soft Delete (Tombstone)"
-                style={{
-                  padding: '6px',
-                  borderRadius: '6px',
-                  backgroundColor: 'transparent',
-                  color: 'var(--accent-danger)'
-                }}
+                title="Trash Note"
+                style={{ backgroundColor: 'transparent', color: 'var(--accent-red-text)' }}
               >
-                <Trash2 size={16} />
+                <Trash2 size={15} />
               </button>
             </>
           )}
