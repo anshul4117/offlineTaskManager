@@ -1,9 +1,9 @@
 import React from 'react';
-import { Home, FileText, Clock, AlertTriangle, Trash2, HardDrive, ToggleLeft, ToggleRight, Layers } from 'lucide-react';
+import { Home, FileText, Clock, AlertTriangle, Trash2, Settings, HardDrive } from 'lucide-react';
 
 interface SidebarProps {
-  activeTab: 'all' | 'notes' | 'tasks' | 'pending' | 'conflicts' | 'trash';
-  onSelectTab: (tab: 'all' | 'notes' | 'tasks' | 'pending' | 'conflicts' | 'trash') => void;
+  activeTab: string;
+  onSelectTab: (tab: any) => void;
   activeCount: number;
   pendingCount: number;
   conflictCount: number;
@@ -24,7 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   return (
     <aside style={{
-      width: '260px',
+      width: '240px',
       backgroundColor: 'var(--bg-sidebar)',
       borderRight: '1px solid var(--border-color)',
       display: 'flex',
@@ -34,248 +34,163 @@ export const Sidebar: React.FC<SidebarProps> = ({
       minHeight: '100vh',
       flexShrink: 0
     }}>
-      {/* Top Header & Brand */}
+      {/* Top Branding & Navigation */}
       <div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          paddingBottom: '20px',
-          borderBottom: '1px solid var(--border-color)',
-          marginBottom: '20px'
-        }}>
+        {/* App Branding */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px', paddingLeft: '8px' }}>
           <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
             backgroundColor: 'var(--text-primary)',
+            color: 'var(--accent-lime)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--accent-lime)',
             fontWeight: 800,
-            fontSize: '18px'
+            fontSize: '16px'
           }}>
-            <Layers size={20} />
+            ≡
           </div>
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: '1.2' }}>
+            <h1 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: '1.2' }}>
               SyncNote
-            </h2>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            </h1>
+            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
               v2.4.0-offline
             </span>
           </div>
         </div>
 
-        {/* Navigation Items */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {/* Home / All Notes */}
-          <button
-            onClick={() => onSelectTab('all')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: activeTab === 'all' ? 'var(--accent-lime)' : 'transparent',
-              color: activeTab === 'all' ? 'var(--accent-lime-text)' : 'var(--text-secondary)',
-              fontWeight: activeTab === 'all' ? 700 : 600,
-              fontSize: '13px',
-              transition: 'background-color 0.15s'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Home size={16} />
-              <span>Home</span>
-            </div>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              padding: '2px 8px',
-              borderRadius: '10px',
-              backgroundColor: activeTab === 'all' ? 'rgba(0,0,0,0.1)' : 'var(--bg-light)',
-              color: activeTab === 'all' ? 'var(--accent-lime-text)' : 'var(--text-muted)'
-            }}>
-              {activeCount}
-            </span>
-          </button>
+        {/* Nav Items */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {[
+            { id: 'all', label: 'Home', icon: Home, highlight: true },
+            { id: 'all-notes', label: 'All Notes', icon: FileText, count: activeCount },
+            { id: 'pending', label: 'Pending', icon: Clock, count: pendingCount, purple: pendingCount > 0 },
+            { id: 'conflicts', label: 'Conflicts', icon: AlertTriangle, count: conflictCount, red: conflictCount > 0 },
+            { id: 'trash', label: 'Trash (Tombstones)', icon: Trash2, count: trashCount }
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id || (item.id === 'all-notes' && activeTab === 'all');
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelectTab(item.id === 'all-notes' ? 'all' : item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: isActive
+                    ? 'var(--accent-lime)'
+                    : 'transparent',
+                  color: isActive
+                    ? 'var(--accent-lime-text)'
+                    : 'var(--text-secondary)',
+                  fontWeight: isActive ? 700 : 600,
+                  fontSize: '13px',
+                  transition: 'background-color 0.15s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Icon size={16} />
+                  <span>{item.label}</span>
+                </div>
 
-          {/* All Notes Filter */}
-          <button
-            onClick={() => onSelectTab('notes')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: activeTab === 'notes' ? 'var(--accent-lime)' : 'transparent',
-              color: activeTab === 'notes' ? 'var(--accent-lime-text)' : 'var(--text-secondary)',
-              fontWeight: activeTab === 'notes' ? 700 : 600,
-              fontSize: '13px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <FileText size={16} />
-              <span>All Notes</span>
-            </div>
-          </button>
-
-          {/* Pending Outbox Queue */}
-          <button
-            onClick={() => onSelectTab('pending')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: activeTab === 'pending' ? 'var(--accent-purple-bg)' : 'transparent',
-              color: activeTab === 'pending' ? 'var(--accent-purple-text)' : 'var(--text-secondary)',
-              fontWeight: activeTab === 'pending' ? 700 : 600,
-              fontSize: '13px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Clock size={16} />
-              <span>Pending</span>
-            </div>
-            {pendingCount > 0 && (
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 800,
-                padding: '2px 8px',
-                borderRadius: '10px',
-                backgroundColor: 'var(--accent-purple-bg)',
-                color: 'var(--accent-purple-text)'
-              }}>
-                {pendingCount}
-              </span>
-            )}
-          </button>
-
-          {/* Conflicts */}
-          <button
-            onClick={() => onSelectTab('conflicts')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: activeTab === 'conflicts' ? 'var(--accent-red-bg)' : 'transparent',
-              color: activeTab === 'conflicts' ? 'var(--accent-red-text)' : 'var(--text-secondary)',
-              fontWeight: activeTab === 'conflicts' ? 700 : 600,
-              fontSize: '13px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <AlertTriangle size={16} />
-              <span>Conflicts</span>
-            </div>
-            {conflictCount > 0 && (
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 800,
-                padding: '2px 8px',
-                borderRadius: '10px',
-                backgroundColor: 'var(--accent-red-bg)',
-                color: 'var(--accent-red-text)'
-              }}>
-                {conflictCount}
-              </span>
-            )}
-          </button>
-
-          {/* Trash */}
-          <button
-            onClick={() => onSelectTab('trash')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: activeTab === 'trash' ? 'var(--bg-light)' : 'transparent',
-              color: activeTab === 'trash' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              fontWeight: activeTab === 'trash' ? 700 : 600,
-              fontSize: '13px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Trash2 size={16} />
-              <span>Trash</span>
-            </div>
-            {trashCount > 0 && (
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: '10px',
-                backgroundColor: 'var(--bg-light)',
-                color: 'var(--text-muted)'
-              }}>
-                {trashCount}
-              </span>
-            )}
-          </button>
+                {item.count !== undefined && (
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-mono)',
+                    padding: '2px 7px',
+                    borderRadius: '10px',
+                    backgroundColor: item.red
+                      ? 'var(--accent-red-bg)'
+                      : item.purple
+                      ? 'var(--accent-purple-bg)'
+                      : isActive
+                      ? 'rgba(0, 0, 0, 0.1)'
+                      : 'rgba(0, 0, 0, 0.05)',
+                    color: item.red
+                      ? 'var(--accent-red-text)'
+                      : item.purple
+                      ? 'var(--accent-purple-text)'
+                      : isActive
+                      ? 'var(--accent-lime-text)'
+                      : 'var(--text-muted)'
+                  }}>
+                    {item.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
       </div>
 
-      {/* Footer Storage Meter & Offline Toggle */}
-      <div style={{
-        paddingTop: '16px',
-        borderTop: '1px solid var(--border-color)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px'
-      }}>
-        {/* Simulate Offline Toggle */}
-        <div
-          onClick={onToggleSimulatedOffline}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 12px',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'var(--bg-light)',
-            cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: 700
-          }}
-        >
-          <span>Simulate Offline</span>
-          {isSimulatedOffline ? (
-            <ToggleRight color="var(--accent-red-text)" size={24} />
-          ) : (
-            <ToggleLeft color="var(--text-muted)" size={24} />
-          )}
+      {/* Bottom Storage & Offline Simulation Control */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+        {/* Offline Simulation Toggle */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 12px',
+          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+          borderRadius: 'var(--radius-md)'
+        }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
+            Simulate Offline
+          </span>
+          <button
+            onClick={onToggleSimulatedOffline}
+            style={{
+              width: '38px',
+              height: '20px',
+              borderRadius: '10px',
+              backgroundColor: isSimulatedOffline ? 'var(--accent-lime-text)' : '#cbd0c0',
+              position: 'relative',
+              padding: '2px',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            <div style={{
+              width: '16px',
+              height: '16px',
+              borderRadius: '50%',
+              backgroundColor: isSimulatedOffline ? 'var(--accent-lime)' : '#ffffff',
+              transform: isSimulatedOffline ? 'translateX(18px)' : 'translateX(0)',
+              transition: 'transform 0.2s'
+            }} />
+          </button>
         </div>
 
-        {/* Storage Widget */}
+        {/* IndexedDB Storage Meter */}
         <div style={{
-          backgroundColor: 'var(--bg-light)',
-          borderRadius: 'var(--radius-md)',
           padding: '12px',
+          backgroundColor: 'rgba(0, 0, 0, 0.03)',
+          borderRadius: 'var(--radius-md)',
           fontSize: '11px',
-          color: 'var(--text-secondary)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px'
+          fontFamily: 'var(--font-mono)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--text-primary)' }}>
-            <HardDrive size={13} />
-            <span>IndexedDB Storage</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>IndexedDB Storage</span>
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>14.2 MB</span>
           </div>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)' }}>
-            14.2 MB
+          <div style={{
+            height: '4px',
+            borderRadius: '2px',
+            backgroundColor: '#d8dbc8',
+            overflow: 'hidden',
+            marginBottom: '6px'
+          }}>
+            <div style={{ width: '28%', height: '100%', backgroundColor: 'var(--accent-lime-text)' }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
             <span>Local Buffer</span>
-            <span>50 MB</span>
+            <span>50 MB Max</span>
           </div>
         </div>
       </div>

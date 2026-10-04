@@ -58,7 +58,7 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
       await onSave(title, content, type, editingItem?.id);
       onClose();
     } catch (err: any) {
-      setError(err?.message || 'Failed to save record.');
+      setError(err?.message || 'Failed to save record to IndexedDB.');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,7 +74,7 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(24, 28, 34, 0.6)',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
       backdropFilter: 'blur(4px)',
       display: 'flex',
       alignItems: 'center',
@@ -83,32 +83,34 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
       padding: '16px'
     }}>
       <div style={{
-        backgroundColor: 'var(--bg-card)',
+        backgroundColor: '#ffffff',
         borderRadius: 'var(--radius-lg)',
         border: '1px solid var(--border-color)',
         width: '100%',
-        maxWidth: '560px',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+        maxWidth: '540px',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
         overflow: 'hidden'
       }}>
-        {/* Header */}
+        {/* Modal Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '20px 24px',
-          backgroundColor: 'var(--bg-light)',
           borderBottom: '1px solid var(--border-color)'
         }}>
           <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
             {editingItem ? 'Edit Record' : `New ${type === 'note' ? 'Note' : 'Task'}`}
           </h2>
-          <button onClick={onClose} style={{ backgroundColor: 'transparent', color: 'var(--text-muted)' }}>
+          <button
+            onClick={onClose}
+            style={{ backgroundColor: 'transparent', color: 'var(--text-muted)' }}
+          >
             <X size={20} />
           </button>
         </div>
 
-        {/* Form Body */}
+        {/* Modal Body */}
         <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
           {error && (
             <div style={{
@@ -117,18 +119,17 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
               backgroundColor: 'var(--accent-red-bg)',
               color: 'var(--accent-red-text)',
               fontSize: '13px',
-              fontWeight: 600,
               marginBottom: '16px',
-              border: '1px solid var(--accent-red-text)'
+              border: '1px solid var(--accent-red-border)'
             }}>
               {error}
             </div>
           )}
 
-          {/* Type Toggle */}
+          {/* Type Selector */}
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
-              TYPE
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
+              Type
             </label>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
@@ -178,8 +179,8 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
 
           {/* Title Input */}
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
-              TITLE
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Title
             </label>
             <input
               type="text"
@@ -190,32 +191,32 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
                 width: '100%',
                 padding: '12px 14px',
                 borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--bg-light)',
+                backgroundColor: '#ffffff',
                 color: 'var(--text-primary)',
                 border: '1px solid var(--border-color)',
                 fontSize: '14px',
-                fontWeight: 600,
                 outline: 'none'
               }}
             />
           </div>
 
-          {/* Content Textarea */}
+          {/* Content Textarea & Counter */}
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>
-                CONTENT
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                Content
               </label>
               <span style={{
                 fontSize: '11px',
                 fontFamily: 'var(--font-mono)',
-                color: isNearLimit ? 'var(--accent-red-text)' : 'var(--text-muted)'
+                color: isNearLimit ? 'var(--accent-red-text)' : 'var(--text-muted)',
+                fontWeight: isNearLimit ? 700 : 400
               }}>
                 {contentLength.toLocaleString()} / {MAX_CONTENT_LENGTH.toLocaleString()} chars
               </span>
             </div>
             <textarea
-              placeholder="Enter note or task details..."
+              placeholder="Enter details..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={6}
@@ -223,9 +224,9 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
                 width: '100%',
                 padding: '12px 14px',
                 borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--bg-light)',
+                backgroundColor: '#ffffff',
                 color: 'var(--text-primary)',
-                border: '1px solid var(--border-color)',
+                border: isNearLimit ? '1px solid var(--accent-red-border)' : '1px solid var(--border-color)',
                 fontSize: '14px',
                 outline: 'none',
                 resize: 'vertical'
@@ -241,7 +242,7 @@ export const ItemEditorModal: React.FC<ItemEditorModalProps> = ({
               style={{
                 padding: '10px 18px',
                 borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--bg-light)',
+                backgroundColor: '#ffffff',
                 color: 'var(--text-secondary)',
                 border: '1px solid var(--border-color)',
                 fontSize: '13px',

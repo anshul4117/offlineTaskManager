@@ -295,7 +295,7 @@ export const App: React.FC = () => {
         {/* Content Items Grid */}
         {filteredRecords.length === 0 ? (
           <EmptyState
-            title={activeTab === 'trash' ? 'Trash is empty' : 'No records in IndexedDB'}
+            title={activeTab === 'trash' ? 'Trash is empty' : 'No notes found'}
             description={searchQuery ? 'No notes match your search query.' : 'Click "New Note" to create your first offline-first note.'}
             onCreateNew={activeTab !== 'trash' ? () => handleCreateNew('note') : undefined}
           />

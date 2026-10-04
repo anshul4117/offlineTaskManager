@@ -20,8 +20,8 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(24, 28, 34, 0.7)',
-      backdropFilter: 'blur(4px)',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      backdropFilter: 'blur(5px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -29,33 +29,32 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
       padding: '20px'
     }}>
       <div style={{
-        backgroundColor: 'var(--bg-card)',
+        backgroundColor: '#ffffff',
         borderRadius: 'var(--radius-lg)',
         border: '1px solid var(--border-color)',
         width: '100%',
-        maxWidth: '740px',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+        maxWidth: '720px',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
         maxHeight: '80vh',
         display: 'flex',
         flexDirection: 'column'
       }}>
-        {/* Header */}
+        {/* Modal Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '20px 24px',
-          backgroundColor: 'var(--bg-light)',
           borderBottom: '1px solid var(--border-color)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Layers size={22} color="var(--accent-lime-text)" />
+            <Layers size={22} color="var(--accent-purple-text)" />
             <div>
               <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
                 IndexedDB Outbox Operations Queue
               </h2>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Live outbox mutation operations & coalescing inspector
+                Live Queue Visualizer — Operation Digest & Coalescing Rules
               </p>
             </div>
           </div>
@@ -64,30 +63,30 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
           </button>
         </div>
 
-        {/* Content */}
+        {/* Modal Body */}
         <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
           {!outboxOps || outboxOps.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
               <CheckCircle2 size={40} color="var(--accent-green-text)" style={{ marginBottom: '12px' }} />
-              <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Outbox Queue is Empty</p>
+              <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Outbox Queue is empty</p>
               <p style={{ fontSize: '13px', marginTop: '4px' }}>
-                All local mutations have coalesced or been synchronized.
+                All local mutations are clean. Create, edit, or delete notes to enqueue operations.
               </p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{
                 padding: '10px 14px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--bg-light)',
-                color: 'var(--text-secondary)',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: 'var(--accent-purple-bg)',
+                color: 'var(--accent-purple-text)',
                 fontSize: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                border: '1px solid var(--border-color)'
+                marginBottom: '8px'
               }}>
-                <Info size={16} color="var(--accent-purple-text)" />
+                <Info size={16} />
                 <span>
                   Showing {outboxOps.length} queued mutation {outboxOps.length === 1 ? 'operation' : 'operations'}. Operations coalesce automatically.
                 </span>
@@ -98,7 +97,7 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
                   key={op.opId}
                   style={{
                     backgroundColor: 'var(--bg-light)',
-                    borderRadius: '10px',
+                    borderRadius: 'var(--radius-md)',
                     padding: '14px 16px',
                     border: '1px solid var(--border-color)',
                     fontSize: '13px'
@@ -110,7 +109,7 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
                         textTransform: 'uppercase',
                         fontWeight: 800,
                         fontSize: '11px',
-                        padding: '2px 8px',
+                        padding: '3px 8px',
                         borderRadius: '4px',
                         backgroundColor: op.type === 'create'
                           ? 'var(--accent-green-bg)'
@@ -129,7 +128,8 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
                         opId: {op.opId.slice(0, 8)}...
                       </span>
                     </div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={12} />
                       {new Date(op.timestamp).toLocaleTimeString()}
                     </span>
                   </div>
@@ -137,7 +137,7 @@ export const OutboxInspectorModal: React.FC<OutboxInspectorModalProps> = ({ isOp
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', color: 'var(--text-secondary)', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
                     <div>Record ID: <span style={{ color: 'var(--text-primary)' }}>{op.recordId.slice(0, 8)}...</span></div>
                     <div>Base Version: <span style={{ fontWeight: 700, color: 'var(--accent-purple-text)' }}>v{op.baseVersion}</span></div>
-                    <div>Title: <span style={{ color: 'var(--text-primary)' }}>{op.payload.title || '(Untitled)'}</span></div>
+                    <div>Title: <span style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', fontWeight: 600 }}>{op.payload.title || '(Untitled)'}</span></div>
                     <div>Status: <span style={{ textTransform: 'capitalize', fontWeight: 700, color: 'var(--text-primary)' }}>{op.status}</span></div>
                   </div>
                 </div>

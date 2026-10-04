@@ -105,16 +105,13 @@ export async function updateRecord(
   };
 
   await db.transaction('rw', [db.records, db.outbox], async () => {
-    // Save updated local record
     await db.records.put(updatedRecord);
 
-    // Fetch existing outbox ops for this record
     const existingOps = await db.outbox.where('recordId').equals(id).toArray();
     const createOp = existingOps.find((op) => op.type === 'create');
     const updateOp = existingOps.find((op) => op.type === 'update');
 
     if (createOp) {
-      // Coalescing Rule 1: create -> update = update payload of original 'create' operation
       await db.outbox.put({
         ...createOp,
         payload: {
@@ -128,7 +125,6 @@ export async function updateRecord(
         timestamp: now
       });
     } else if (updateOp) {
-      // Coalescing Rule 2: update -> update = update payload of 'update' op, preserving original baseVersion!
       await db.outbox.put({
         ...updateOp,
         payload: {
@@ -142,7 +138,6 @@ export async function updateRecord(
         timestamp: now
       });
     } else {
-      // Insert new 'update' operation
       const opId = crypto.randomUUID();
       const outboxOp: OutboxOperation = {
         opId,
@@ -180,31 +175,25 @@ export async function deleteRecord(id: string): Promise<void> {
   const now = new Date().toISOString();
 
   await db.transaction('rw', [db.records, db.outbox], async () => {
-    // Coalescing Rule 4: Record created offline and never synced (version === 0)
     if (existing.version === 0) {
-      // Remove all pending outbox operations for this record
       const pendingOps = await db.outbox.where('recordId').equals(id).toArray();
       for (const op of pendingOps) {
         await db.outbox.delete(op.opId);
       }
-      // Remove local record from IndexedDB
       await db.records.delete(id);
       return;
     }
 
-    // Coalescing Rule 3: Record was synced (version > 0)
     const existingOps = await db.outbox.where('recordId').equals(id).toArray();
     let baseVersion = existing.version;
 
-    // Remove any existing pending update ops
     for (const op of existingOps) {
       if (op.type === 'update') {
-        baseVersion = op.baseVersion; // Preserve original baseVersion
+        baseVersion = op.baseVersion;
       }
       await db.outbox.delete(op.opId);
     }
 
-    // Create tombstone local record
     const tombstoneRecord: LocalRecord = {
       ...existing,
       deleted: true,
@@ -212,7 +201,6 @@ export async function deleteRecord(id: string): Promise<void> {
       updatedAt: now
     };
 
-    // Insert single 'delete' outbox operation
     const opId = crypto.randomUUID();
     const deleteOp: OutboxOperation = {
       opId,
@@ -253,7 +241,6 @@ export async function restoreRecord(id: string): Promise<void> {
       updatedAt: now
     });
 
-    // Remove old delete ops and insert update op
     const existingOps = await db.outbox.where('recordId').equals(id).toArray();
     for (const op of existingOps) {
       await db.outbox.delete(op.opId);
@@ -282,20 +269,6 @@ export async function restoreRecord(id: string): Promise<void> {
 }
 
 /**
- * Retrieves a single record by ID.
- */
-export async function getRecord(id: string): Promise<LocalRecord | undefined> {
-  return await db.records.get(id);
-}
-
-/**
- * Lists all active (non-deleted) records.
- */
-export async function getActiveRecords(): Promise<LocalRecord[]> {
-  return await db.records.filter((r) => !r.deleted).toArray();
-}
-
-/**
  * Resolves a version conflict on a local record.
  */
 export async function resolveConflict(
@@ -320,6 +293,7 @@ export async function resolveConflict(
       for (const op of pendingOps) {
         await db.outbox.delete(op.opId);
       }
+
       await db.records.put({
         id: serverSnap.id,
         title: serverSnap.title,
@@ -351,7 +325,13 @@ export async function resolveConflict(
         status: 'pending',
         retryCount: 0
       };
-      await db.records.update(id, { pending: true, conflict: false, serverRecord: undefined, updatedAt: now });
+
+      await db.records.update(id, {
+        pending: true,
+        conflict: false,
+        serverRecord: undefined,
+        updatedAt: now
+      });
       await db.outbox.put(outboxOp);
     } else if (resolution === 'merge' && mergedContent) {
       const opId = crypto.randomUUID();
@@ -372,6 +352,7 @@ export async function resolveConflict(
         status: 'pending',
         retryCount: 0
       };
+
       await db.records.put({
         id,
         title: mergedContent.title,
@@ -387,6 +368,20 @@ export async function resolveConflict(
       await db.outbox.put(outboxOp);
     }
   });
+}
+
+/**
+ * Retrieves a single record by ID.
+ */
+export async function getRecord(id: string): Promise<LocalRecord | undefined> {
+  return await db.records.get(id);
+}
+
+/**
+ * Lists all active (non-deleted) records.
+ */
+export async function getActiveRecords(): Promise<LocalRecord[]> {
+  return await db.records.filter((r) => !r.deleted).toArray();
 }
 
 /**
